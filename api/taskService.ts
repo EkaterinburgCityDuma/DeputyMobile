@@ -33,7 +33,7 @@ class TaskService {
   private async fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = 10000): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -65,6 +65,15 @@ class TaskService {
       console.error('Ошибка при создании задачи:', error);
       throw error;
     }
+  }
+
+  async getStatuses(): Promise<{ name: string; isDefault: boolean }[]> {
+    const response = await this.fetchWithTimeout(`${apiUrl}/api/Status/get-all`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Ошибка загрузки статусов');
+    return await response.json();
   }
 
   async getAllTasks(): Promise<Task[]> {

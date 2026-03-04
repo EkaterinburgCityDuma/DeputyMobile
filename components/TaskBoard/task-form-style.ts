@@ -1,192 +1,136 @@
-import {StyleSheet} from 'react-native'
+import { StyleSheet } from 'react-native';
+
+const PRIMARY_COLOR = '#2A6E3F'; // Ваш зеленый
 
 export const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#FFFFFF',
     },
     header: {
-        backgroundColor: '#2A6E3F',
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    backButton: {
-        padding: 8,
-        marginRight: 8,
-    },
-    headerContent: {
-        flex: 1,
+        height: 56,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
     },
     headerTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        color: '#FFFFFF',
-        textAlign: 'center',
+        fontWeight: '700',
+        color: '#111827',
     },
-    keyboardAvoidingView: {
-        flex: 1,
-    },
-    scrollView: {
-        flex: 1,
+    backButton: {
+        padding: 4,
     },
     scrollContent: {
-        paddingBottom: 120,
+        paddingHorizontal: 20,
+        paddingTop: 20,
     },
-    formSection: {
-        backgroundColor: '#FFFFFF',
-        marginHorizontal: 16,
-        marginTop: 16,
-        padding: 16,
-        borderRadius: 8,
+    sectionLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#6B7280',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 12,
+        marginTop: 24,
+    },
+    inputGroup: {
+        backgroundColor: '#F9FAFB',
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
     },
-    formSectionTitle: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#374151',
-        marginBottom: 8,
-    },
-    requiredStar: {
-        color: '#EF4444',
-    },
-    input: {
+    minimalInput: {
         fontSize: 16,
         color: '#111827',
-        padding: 12,
-        borderRadius: 6,
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
-        backgroundColor: '#FFFFFF',
-    },
-    disabledInput: {
-        backgroundColor: '#F3F4F6',
-        color: '#6B7280',
+        padding: 16,
     },
     textArea: {
-        height: 120,
+        height: 100,
         textAlignVertical: 'top',
     },
-    helperText: {
-        fontSize: 12,
-        color: '#6B7280',
-        marginTop: 4,
+    divider: {
+        height: 1,
+        backgroundColor: '#E5E7EB',
+        marginHorizontal: 16,
     },
-    priorityGrid: {
+    listAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F9FAFB',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    listActionContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    listActionText: {
+        fontSize: 16,
+        color: '#111827',
+    },
+    chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
     },
-    priorityButton: {
-        flex: 1,
-        minWidth: '45%',
-        paddingVertical: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    priorityButtonText: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    selectTrigger: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 12,
-        borderRadius: 6,
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
-        backgroundColor: '#FFFFFF',
-    },
-    selectTriggerText: {
-        fontSize: 16,
-        color: '#111827',
-    },
-    selectTriggerArrow: {
-        fontSize: 12,
-        color: '#6B7280',
-    },
-    selectDropdown: {
-        marginTop: 8,
-        borderRadius: 6,
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        maxHeight: 200,
-    },
-    selectOption: {
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-    },
-    selectOptionActive: {
+    chip: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 12,
         backgroundColor: '#F3F4F6',
-    },
-    selectOptionText: {
-        fontSize: 14,
-        color: '#374151',
-    },
-    selectOptionTextActive: {
-        color: '#111827',
-        fontWeight: '500',
-    },
-    bottomSpacer: {
-        height: 80,
-    },
-    actionsContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        padding: 16,
-        paddingBottom: 24,
-    },
-    submitButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#2A6E3F',
-        paddingVertical: 14,
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    submitButtonText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#FFFFFF',
-        marginLeft: 8,
-    },
-    cancelButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
-        paddingVertical: 14,
-        borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#D1D5DB',
+        borderColor: '#E5E7EB',
     },
-    cancelButtonText: {
+    chipActive: {
+        backgroundColor: PRIMARY_COLOR,
+        borderColor: PRIMARY_COLOR,
+    },
+    chipText: {
         fontSize: 14,
-        fontWeight: '500',
+        color: '#4B5563',
+        fontWeight: '600',
+    },
+    chipTextActive: {
+        color: '#FFFFFF',
+    },
+    footer: {
+        marginTop: 48,
+        gap: 8,
+    },
+    primaryButton: {
+        backgroundColor: PRIMARY_COLOR,
+        height: 56,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: PRIMARY_COLOR,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    primaryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    secondaryButton: {
+        height: 56,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    secondaryButtonText: {
         color: '#6B7280',
-        marginLeft: 8,
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

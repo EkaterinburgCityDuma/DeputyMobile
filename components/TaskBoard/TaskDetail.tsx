@@ -277,7 +277,7 @@ export function TaskDetail() {
                         </Text>
                         <View style={styles.statusBadge}>
                             <Text style={styles.statusBadgeText}>
-                                {statusConfig[currentStatus].label}
+
                             </Text>
                         </View>
                     </View>

@@ -1,16 +1,12 @@
 import { taskService } from '@/api/taskService';
-import { mockProfiles } from '@/data/mockData';
-import { TaskPriority } from '@/data/types';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ArrowLeft, Save, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { ArrowLeft, Calendar, ChevronRight } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     Text,
@@ -18,439 +14,215 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { styles } from './task-form-style';
 
 type RootStackParamList = {
-    TaskBoard: undefined;
-    TaskDetail: { id: string };
     TaskForm: { id?: string };
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type TaskFormRouteProp = RouteProp<RootStackParamList, 'TaskForm'>;
-
-const priorityOptions: { value: TaskPriority; label: string; color: string; activeColor: string }[] = [
-    {
-        value: 'low',
-        label: 'Низкий',
-        color: '#D1D5DB',
-        activeColor: '#9CA3AF',
-    },
-    {
-        value: 'medium',
-        label: 'Средний',
-        color: '#93C5FD',
-        activeColor: '#3B82F6',
-    },
-    {
-        value: 'high',
-        label: 'Высокий',
-        color: '#FDBA74',
-        activeColor: '#F97316',
-    },
-    {
-        value: 'urgent',
-        label: 'Срочный',
-        color: '#FCA5A5',
-        activeColor: '#EF4444',
-    },
+// Определяем 5 уровней приоритета согласно вашему API (1-5)
+const PRIORITY_MAP = [
+    { id: 1, label: 'Низкий' },
+    { id: 2, label: 'Средний' },
+    { id: 3, label: 'Высокий' },
+    { id: 4, label: 'Срочный' },
+    { id: 5, label: 'Критический' },
 ];
 
-const priorityActiveColors: Record<TaskPriority, { bg: string; border: string; text: string }> = {
-    low: {
-        bg: '#F3F4F6',
-        border: '#9CA3AF',
-        text: '#374151',
-    },
-    medium: {
-        bg: '#DBEAFE',
-        border: '#3B82F6',
-        text: '#1E40AF',
-    },
-    high: {
-        bg: '#FFEDD5',
-        border: '#F97316',
-        text: '#9A3412',
-    },
-    urgent: {
-        bg: '#FEE2E2',
-        border: '#EF4444',
-        text: '#991B1B',
-    },
-};
-
-interface PriorityButtonProps {
-    option: typeof priorityOptions[0];
-    isSelected: boolean;
-    onPress: (value: TaskPriority) => void;
-}
-
-const PriorityButton = ({ option, isSelected, onPress }: PriorityButtonProps) => {
-    const activeConfig = priorityActiveColors[option.value];
-
-    return (
-        <TouchableOpacity
-            style={[
-                styles.priorityButton,
-                isSelected
-                    ? {
-                        backgroundColor: activeConfig.bg,
-                        borderColor: activeConfig.border,
-                        borderWidth: 2,
-                    }
-                    : {
-                        backgroundColor: '#FFFFFF',
-                        borderColor: option.color,
-                        borderWidth: 1,
-                    },
-            ]}
-            onPress={() => onPress(option.value)}
-        >
-            <Text
-                style={[
-                    styles.priorityButtonText,
-                    isSelected
-                        ? { color: activeConfig.text, fontWeight: '600' }
-                        : { color: option.activeColor },
-                ]}
-            >
-                {option.label}
-            </Text>
-        </TouchableOpacity>
-    );
-};
-
-const FormSection = ({ children, title, required = false }: {
-    children: React.ReactNode;
-    title: string;
-    required?: boolean;
-}) => (
-    <View style={styles.formSection}>
-        <Text style={styles.formSectionTitle}>
-            {title}
-            {required && <Text style={styles.requiredStar}> *</Text>}
-        </Text>
-        {children}
-    </View>
-);
-
 export function TaskForm() {
-    const navigation = useNavigation<NavigationProp>();
-    const route = useRoute<TaskFormRouteProp>();
-    const { id } = route.params || {};
+    const insets = useSafeAreaInsets();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-    const isEditMode = id && id !== 'new';
-
+    // Поля формы
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [priority, setPriority] = useState<TaskPriority>('medium');
-    const [assignedTo, setAssignedTo] = useState('1');
-    const [dueDate, setDueDate] = useState('');
-    const [tags, setTags] = useState('');
-    const [isAssignedToOpen, setIsAssignedToOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [priority, setPriority] = useState<number>(2); // По умолчанию "Средний" (2)
+    const [dueDate, setDueDate] = useState<Date | null>(null);
 
-    // Для создания задачи автоматически выставляется дата начала (текущее время)
-    const startDate = new Date().toISOString();
+    // Статусы из API
+    const [statuses, setStatuses] = useState<{name: string}[]>([]);
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+
+    useEffect(() => {
+        loadStatuses();
+    }, []);
+
+    const loadStatuses = async () => {
+        try {
+            const data = await taskService.getStatuses();
+            setStatuses(data);
+            // Если есть статус "создана", выбираем его по умолчанию
+            const initial = data.find(s => s.name.toLowerCase() === 'создана') || data[0];
+            if (initial) setSelectedStatus(initial.name);
+        } catch (e) {
+            Toast.show({ type: 'error', text1: 'Ошибка загрузки статусов' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleSubmit = async () => {
-        if (!title.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка',
-                text2: 'Введите название задачи',
-            });
-            return;
-        }
-
-        if (!description.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка',
-                text2: 'Введите описание задачи',
-            });
-            return;
-        }
-
-        if (!dueDate) {
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка',
-                text2: 'Укажите планируемую дату завершения',
-            });
-            return;
-        }
-
-        // Проверка, что дата завершения >= даты начала
-        const dueDateObj = new Date(dueDate);
-        const startDateObj = new Date(startDate);
-
-        if (dueDateObj < startDateObj) {
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка',
-                text2: 'Дата завершения не может быть раньше даты начала',
-            });
+        if (!title.trim() || !description.trim() || !dueDate || !selectedStatus) {
+            Toast.show({ type: 'error', text1: 'Заполните все поля' });
             return;
         }
 
         setIsSubmitting(true);
         try {
+            // Формируем payload точно по вашему образцу CURL
             const payload = {
                 title: title.trim(),
                 description: description.trim(),
-                startDate: startDate,
-                expectedEndDate: new Date(dueDate).toISOString(),
-                priority: getPriorityNumber(priority),
-                status: 'created',
+                startDate: new Date().toISOString(),
+                expectedEndDate: dueDate.toISOString(),
+                priority: priority, // Число 1-5
+                status: selectedStatus, // Строка
             };
 
             await taskService.createTask(payload);
-            
-            Toast.show({
-                type: 'success',
-                text1: 'Успешно',
-                text2: 'Задача успешно создана',
-            });
-            
+            Toast.show({ type: 'success', text1: 'Задача создана' });
             navigation.goBack();
         } catch (error) {
-            console.error('Ошибка при создании задачи:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка',
-                text2: 'Не удалось создать задачу',
-            });
+            Toast.show({ type: 'error', text1: 'Ошибка при сохранении' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleCancel = () => {
-        Alert.alert(
-            'Отмена',
-            'Вы уверены, что хотите отменить создание задачи? Все несохраненные изменения будут потеряны.',
-            [
-                { text: 'Продолжить редактирование', style: 'cancel' },
-                {
-                    text: 'Отменить',
-                    style: 'destructive',
-                    onPress: () => navigation.goBack(),
-                },
-            ]
+    if (isLoading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center' }]}>
+                <ActivityIndicator size="large" color="#2A6E3F" />
+            </View>
         );
-    };
-
-    const selectedProfile = mockProfiles.find(p => p.id === assignedTo);
+    }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor="#2A6E3F" barStyle="light-content" />
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={handleCancel}
-                >
-                    <ArrowLeft size={20} color="#FFFFFF" />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <ArrowLeft size={24} color="#111827" />
                 </TouchableOpacity>
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>
-                        {isEditMode ? 'Редактировать задачу' : 'Новая задача'}
-                    </Text>
-                </View>
+                <Text style={styles.headerTitle}>Новая задача</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAvoidingView
-                style={styles.keyboardAvoidingView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={{ flex: 1 }}
             >
                 <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        { paddingBottom: insets.bottom + 20 } // Динамический отступ снизу
+                    ]}
                 >
-                    {/* Название */}
-                    <FormSection title="Название задачи" required>
+                    <Text style={styles.sectionLabel}>Информация</Text>
+                    <View style={styles.inputGroup}>
                         <TextInput
-                            style={styles.input}
+                            style={styles.minimalInput}
                             value={title}
                             onChangeText={setTitle}
-                            placeholder="Введите название задачи"
+                            placeholder="Введите название"
                             placeholderTextColor="#9CA3AF"
-                            maxLength={100}
                         />
-                    </FormSection>
-
-                    {/* Описание */}
-                    <FormSection title="Описание" required>
+                        <View style={styles.divider} />
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.minimalInput, styles.textArea]}
                             value={description}
                             onChangeText={setDescription}
-                            placeholder="Введите подробное описание задачи"
+                            placeholder="Введите описание"
                             placeholderTextColor="#9CA3AF"
                             multiline
-                            numberOfLines={5}
-                            textAlignVertical="top"
                         />
-                        <Text style={styles.helperText}>
-                            Опишите задачу максимально подробно
-                        </Text>
-                    </FormSection>
+                    </View>
 
-                    {/* Приоритет */}
-                    <FormSection title="Приоритет" required>
-                        <View style={styles.priorityGrid}>
-                            {priorityOptions.map((option) => (
-                                <PriorityButton
-                                    key={option.value}
-                                    option={option}
-                                    isSelected={priority === option.value}
-                                    onPress={setPriority}
-                                />
-                            ))}
+                    <Text style={styles.sectionLabel}>Срок исполнения</Text>
+                    <TouchableOpacity
+                        style={styles.listAction}
+                        onPress={() => setDatePickerVisibility(true)}
+                    >
+                        <View style={styles.listActionContent}>
+                            <Calendar size={20} color="#6B7280" />
+                            <Text style={[styles.listActionText, !dueDate && { color: '#9CA3AF' }]}>
+                                {dueDate
+                                    ? dueDate.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+                                    : 'Укажите дату и время'}
+                            </Text>
                         </View>
-                        <Text style={styles.helperText}>
-                            Выберите приоритет выполнения задачи
-                        </Text>
-                    </FormSection>
+                        <ChevronRight size={20} color="#D1D5DB" />
+                    </TouchableOpacity>
 
-                    {/* Дата начала (только показываем, не редактируем при создании) */}
-                    {!isEditMode && (
-                        <FormSection title="Дата начала">
-                            <TextInput
-                                style={[styles.input, styles.disabledInput]}
-                                value={startDate.replace('T', ' ')}
-                                editable={false}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                            <Text style={styles.helperText}>
-                                Автоматически устанавливается на текущее время
-                            </Text>
-                        </FormSection>
-                    )}
+                    <Text style={styles.sectionLabel}>Статус</Text>
+                    <View style={styles.chipContainer}>
+                        {statuses.map((s) => (
+                            <TouchableOpacity
+                                key={s.name}
+                                onPress={() => setSelectedStatus(s.name)}
+                                style={[styles.chip, selectedStatus === s.name && styles.chipActive]}
+                            >
+                                <Text style={[styles.chipText, selectedStatus === s.name && styles.chipTextActive]}>
+                                    {s.name}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                    {/* Планируемая дата завершения */}
-                    <FormSection title="Планируемая дата завершения" required>
-                        <TextInput
-                            style={styles.input}
-                            value={dueDate}
-                            onChangeText={setDueDate}
-                            placeholder="YYYY-MM-DD HH:MM"
-                            placeholderTextColor="#9CA3AF"
-                            keyboardType="numbers-and-punctuation"
-                        />
-                        <Text style={styles.helperText}>
-                            Укажите крайний срок выполнения задачи
-                        </Text>
-                    </FormSection>
+                    <Text style={styles.sectionLabel}>Приоритет (1-5)</Text>
+                    <View style={styles.chipContainer}>
+                        {PRIORITY_MAP.map((p) => (
+                            <TouchableOpacity
+                                key={p.id}
+                                onPress={() => setPriority(p.id)}
+                                style={[styles.chip, priority === p.id && styles.chipActive]}
+                            >
+                                <Text style={[styles.chipText, priority === p.id && styles.chipTextActive]}>
+                                    {p.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                    {/* Исполнитель */}
-                    <FormSection title="Исполнитель" required>
+                    {/* Кнопки теперь в общем потоке ScrollView */}
+                    <View style={styles.footer}>
                         <TouchableOpacity
-                            style={styles.selectTrigger}
-                            onPress={() => setIsAssignedToOpen(!isAssignedToOpen)}
+                            style={[styles.primaryButton, isSubmitting && { opacity: 0.7 }]}
+                            onPress={handleSubmit}
+                            disabled={isSubmitting}
                         >
-                            <Text style={[
-                                styles.selectTriggerText,
-                                !selectedProfile && { color: '#9CA3AF' }
-                            ]}>
-                                {selectedProfile?.fullName || 'Выберите исполнителя'}
-                            </Text>
-                            <Text style={styles.selectTriggerArrow}>▼</Text>
+                            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Создать задачу</Text>}
                         </TouchableOpacity>
 
-                        {isAssignedToOpen && (
-                            <View style={styles.selectDropdown}>
-                                {mockProfiles.map((profile) => (
-                                    <TouchableOpacity
-                                        key={profile.id}
-                                        style={[
-                                            styles.selectOption,
-                                            assignedTo === profile.id && styles.selectOptionActive,
-                                        ]}
-                                        onPress={() => {
-                                            setAssignedTo(profile.id);
-                                            setIsAssignedToOpen(false);
-                                        }}
-                                    >
-                                        <Text style={[
-                                            styles.selectOptionText,
-                                            assignedTo === profile.id && styles.selectOptionTextActive,
-                                        ]}>
-                                            {profile.fullName}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                        <Text style={styles.helperText}>
-                            Выберите ответственного за выполнение
-                        </Text>
-                    </FormSection>
-
-                    {/* Теги */}
-                    <FormSection title="Теги">
-                        <TextInput
-                            style={styles.input}
-                            value={tags}
-                            onChangeText={setTags}
-                            placeholder="отчетность, благоустройство"
-                            placeholderTextColor="#9CA3AF"
-                        />
-                        <Text style={styles.helperText}>
-                            Разделяйте теги запятыми для удобного поиска
-                        </Text>
-                    </FormSection>
-
-                    {/* Отступ для кнопок */}
-                    <View style={styles.bottomSpacer} />
+                        <TouchableOpacity
+                            style={styles.secondaryButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Text style={styles.secondaryButtonText}>Отмена</Text>
+                        </TouchableOpacity>
+                    </View>
                 </ScrollView>
-
-                {/* Кнопки действий */}
-                <View style={styles.actionsContainer}>
-                    <TouchableOpacity
-                        style={[styles.submitButton, isSubmitting && { opacity: 0.7 }]}
-                        onPress={handleSubmit}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator color="#FFFFFF" size="small" />
-                        ) : (
-                            <>
-                                <Save size={16} color="#FFFFFF" />
-                                <Text style={styles.submitButtonText}>
-                                    {isEditMode ? 'Сохранить изменения' : 'Создать задачу'}
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={handleCancel}
-                        disabled={isSubmitting}
-                    >
-                        <X size={16} color="#6B7280" />
-                        <Text style={styles.cancelButtonText}>Отмена</Text>
-                    </TouchableOpacity>
-                </View>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+
+            <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode="datetime"
+                onConfirm={(date) => { setDueDate(date); setDatePickerVisibility(false); }}
+                onCancel={() => setDatePickerVisibility(false)}
+                locale="ru-RU"
+                confirmTextIOS="Выбрать"
+                cancelTextIOS="Отмена"
+            />
+        </View>
     );
 }
-
-// Вспомогательная функция для преобразования приоритета
-const getPriorityNumber = (priority: TaskPriority): number => {
-    const priorityMap: Record<TaskPriority, number> = {
-        low: 0,
-        medium: 1,
-        high: 2,
-        urgent: 3,
-    };
-    return priorityMap[priority];
-};

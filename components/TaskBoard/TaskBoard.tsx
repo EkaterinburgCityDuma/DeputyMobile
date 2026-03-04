@@ -88,7 +88,6 @@ export function TaskBoard() {
     }
 
     const handleTaskPress = (id: string) => {
-        console.log('[TaskBoard] Переход на TaskDetailScreen с ID:', id);
         router.push({
             pathname: '/TaskDetailScreen',
             params: { id },
