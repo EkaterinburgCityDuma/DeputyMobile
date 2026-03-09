@@ -37,7 +37,14 @@
     },
     "plugins": [
       "@react-native-firebase/app",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
