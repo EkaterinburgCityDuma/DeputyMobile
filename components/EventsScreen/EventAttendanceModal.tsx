@@ -16,6 +16,7 @@ import { AuthTokenManager } from '@/components/LoginScreen/LoginScreen';
 import { apiUrl } from '@/api/api';
 import { catalogService, CatalogItem } from '@/api/catalogService';
 import { ChevronRight } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
     eventId: string;
@@ -55,16 +56,8 @@ export const EventAttendanceModal: React.FC<Props> = ({
     const [currentPath, setCurrentPath] = useState<CatalogItem[]>([]);
     const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
     const [documentError, setDocumentError] = useState<string | null>(null);
+    const insets = useSafeAreaInsets();
 
-    // Сброс формы при открытии
-    useEffect(() => {
-        if (visible) {
-            setSelectedStatus(currentStatus);
-            setExcuseNote('');
-            setExcuseDocument(null);
-            setError(null);
-        }
-    }, [visible, currentStatus]);
 
     // Загрузка каталогов для документов
     const fetchCatalogs = useCallback(async () => {
@@ -149,7 +142,7 @@ export const EventAttendanceModal: React.FC<Props> = ({
 
             formData.append('CatalogId', selectedCatalog.id);
 
-            const response = await fetch(`${apiUrl}/api/Events/attachments`, {
+            const response = await fetch(`${apiUrl}/api/Documents/upload`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'text/plain',
@@ -168,7 +161,6 @@ export const EventAttendanceModal: React.FC<Props> = ({
             setExcuseDocument(document);
             setShowDocumentPicker(false);
 
-            // Сброс состояний выбора
             setSelectedFile(null);
             setSelectedCatalog(null);
             setCurrentPath([]);
@@ -232,6 +224,10 @@ export const EventAttendanceModal: React.FC<Props> = ({
                     }
                 }
             ]);
+            setSelectedStatus(currentStatus);
+            setExcuseNote('');
+            setExcuseDocument(null);
+            setError(null);
 
         } catch (error) {
             console.error('Ошибка при отправке статуса:', error);
@@ -388,8 +384,8 @@ export const EventAttendanceModal: React.FC<Props> = ({
                 animationType="slide"
                 onRequestClose={onClose}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                <View style={[styles.modalOverlay]}>
+                    <View style={[styles.modalContent]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Участие в мероприятии</Text>
                             <TouchableOpacity onPress={onClose}>
@@ -400,7 +396,6 @@ export const EventAttendanceModal: React.FC<Props> = ({
                         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
                             {/* Выбор статуса */}
                             <View style={styles.field}>
-                                <Text style={styles.label}>Статус участия <Text style={styles.required}>*</Text></Text>
                                 <View style={styles.statusButtons}>
                                     <TouchableOpacity
                                         style={[
@@ -409,7 +404,6 @@ export const EventAttendanceModal: React.FC<Props> = ({
                                         ]}
                                         onPress={() => setSelectedStatus('Yes')}
                                     >
-                                        <Check size={20} color={selectedStatus === 'Yes' ? 'white' : '#374151'} />
                                         <Text style={[
                                             styles.statusButtonText,
                                             selectedStatus === 'Yes' && styles.statusButtonTextActive
@@ -425,7 +419,6 @@ export const EventAttendanceModal: React.FC<Props> = ({
                                         ]}
                                         onPress={() => setSelectedStatus('No')}
                                     >
-                                        <X size={20} color={selectedStatus === 'No' ? 'white' : '#374151'} />
                                         <Text style={[
                                             styles.statusButtonText,
                                             selectedStatus === 'No' && styles.statusButtonTextActive
@@ -441,7 +434,6 @@ export const EventAttendanceModal: React.FC<Props> = ({
                                 <>
                                     {/* Оправдательная записка */}
                                     <View style={styles.field}>
-                                        <Text style={styles.label}>Объяснительная записка</Text>
                                         <TextInput
                                             style={styles.textArea}
                                             value={excuseNote}
@@ -494,15 +486,7 @@ export const EventAttendanceModal: React.FC<Props> = ({
                             )}
                         </ScrollView>
 
-                        <View style={styles.modalFooter}>
-                            <TouchableOpacity
-                                style={styles.cancelButton}
-                                onPress={onClose}
-                                disabled={submitting}
-                            >
-                                <Text style={styles.cancelButtonText}>Отмена</Text>
-                            </TouchableOpacity>
-
+                        <View style={[styles.modalFooter, { paddingBottom: insets.bottom + 10}]}>
                             <TouchableOpacity
                                 style={[
                                     styles.submitButton,
@@ -537,7 +521,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        minHeight: '50%',
+        minHeight: '35%',
         maxHeight: '90%',
     },
     pickerModalContent: {
@@ -642,25 +626,12 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     modalFooter: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
+
         padding: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
         gap: 12,
     },
-    cancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
-        backgroundColor: '#f3f4f6',
-    },
-    cancelButtonText: {
-        fontSize: 16,
-        color: '#374151',
-        fontWeight: '500',
-    },
     submitButton: {
+        alignItems: "center",
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,

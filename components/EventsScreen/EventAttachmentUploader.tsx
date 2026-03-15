@@ -80,7 +80,6 @@ export const EventAttachmentUploader: React.FC<Props> = ({
     useEffect(() => {
         if (visible) {
             fetchCatalogs();
-            resetForm();
         }
     }, [visible, fetchCatalogs]);
 
@@ -98,7 +97,6 @@ export const EventAttachmentUploader: React.FC<Props> = ({
     };
 
     const handleClose = () => {
-        resetForm();
         onClose();
     };
 
@@ -115,7 +113,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                 setSelectedFile(result);
             }
         } catch (error) {
-            console.error('Ошибка при выборе файла:', error);
+            console.error('Ошибка при выборе файла', error);
             Alert.alert('Ошибка', 'Не удалось выбрать файл');
         }
     };
@@ -238,6 +236,8 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                     }
                 }
             ]);
+
+            resetForm();
 
         } catch (error) {
             console.error('Ошибка при загрузке файла:', error);
