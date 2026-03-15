@@ -12,11 +12,12 @@ import {
     Platform
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { X, Upload, FileText, Folder, ChevronRight, AlertCircle } from 'lucide-react-native';
+import { X, Upload, FileText, Folder, ChevronRight, AlertCircle, ChevronDown } from 'lucide-react-native';
 import { catalogService, CatalogItem } from '@/api/catalogService';
 import { apiUrl } from '@/api/api';
 import { AuthTokenManager } from '@/components/LoginScreen/LoginScreen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 interface Props {
     eventId: string;
@@ -26,12 +27,12 @@ interface Props {
 }
 
 const FILE_STATUSES = {
-    TODO: 'ToDo',
-    IN_PROGRESS: 'inProgress',
-    DONE: 'Done'
+    ToDo: 'Принят',
+    InProgress: 'В работе',
+    Done: 'Выполнено'
 } as const;
 
-type FileStatus = typeof FILE_STATUSES[keyof typeof FILE_STATUSES];
+type FileStatus = keyof typeof FILE_STATUSES;
 
 export const EventAttachmentUploader: React.FC<Props> = ({
                                                              eventId,
@@ -45,12 +46,20 @@ export const EventAttachmentUploader: React.FC<Props> = ({
     const [selectedCatalog, setSelectedCatalog] = useState<CatalogItem | null>(null);
     const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
     const [description, setDescription] = useState('');
-    const [status, setStatus] = useState<FileStatus | ''>('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [status, setStatus] = useState<FileStatus | null>(null);
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
     const [showCatalogPicker, setShowCatalogPicker] = useState(false);
     const [currentPath, setCurrentPath] = useState<CatalogItem[]>([]);
     const [error, setError] = useState<string | null>(null);
+
+    // Состояния для пикеров даты
+    const [isStartPickerVisible, setStartPickerVisible] = useState(false);
+    const [isEndPickerVisible, setEndPickerVisible] = useState(false);
+
+    // Состояние для выпадающего списка статуса
+    const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
+
     const insets = useSafeAreaInsets();
 
     // Загрузка публичных каталогов
@@ -79,12 +88,13 @@ export const EventAttachmentUploader: React.FC<Props> = ({
         setSelectedCatalog(null);
         setSelectedFile(null);
         setDescription('');
-        setStatus('');
-        setStartDate('');
-        setEndDate('');
+        setStatus(null);
+        setStartDate(null);
+        setEndDate(null);
         setShowCatalogPicker(false);
         setCurrentPath([]);
         setError(null);
+        setIsStatusSelectOpen(false);
     };
 
     const handleClose = () => {
@@ -134,6 +144,28 @@ export const EventAttachmentUploader: React.FC<Props> = ({
         setCurrentPath([]);
     };
 
+    // Обработчики для дат
+    const handleStartDateConfirm = (date: Date) => {
+        setStartDate(date);
+        setStartPickerVisible(false);
+    };
+
+    const handleEndDateConfirm = (date: Date) => {
+        setEndDate(date);
+        setEndPickerVisible(false);
+    };
+
+    const formatDate = (date: Date | null): string => {
+        if (!date) return '';
+        return date.toLocaleDateString('ru-RU', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     // Отправка файла
     const uploadFile = async () => {
         if (!selectedFile || selectedFile.canceled || !selectedFile.assets?.[0]) {
@@ -175,11 +207,11 @@ export const EventAttachmentUploader: React.FC<Props> = ({
             }
 
             if (startDate) {
-                formData.append('StartDate', new Date(startDate).toISOString());
+                formData.append('StartDate', startDate.toISOString());
             }
 
             if (endDate) {
-                formData.append('EndDate', new Date(endDate).toISOString());
+                formData.append('EndDate', endDate.toISOString());
             }
 
             const response = await fetch(`${apiUrl}/api/Events/${eventId}/attachments`, {
@@ -338,7 +370,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
             onRequestClose={handleClose}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Прикрепить файл к событию</Text>
                         <TouchableOpacity onPress={handleClose}>
@@ -346,93 +378,125 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        style={styles.form}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.formContent}
+                    >
                         <View style={styles.field}>
-
-
-                        <TouchableOpacity
-                            style={styles.selector}
-                            onPress={() => setShowCatalogPicker(true)}
-                        >
-                            <Text style={[
-                                styles.selectorText,
-                                !selectedCatalog && styles.placeholderText
-                            ]}>
-                                {selectedCatalog
-                                    ? selectedCatalog.name
-                                    : 'Выберите каталог для загрузки *'}
-                            </Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.selector}
+                                onPress={() => setShowCatalogPicker(true)}
+                            >
+                                <Text style={[
+                                    styles.selectorText,
+                                    !selectedCatalog && styles.placeholderText
+                                ]}>
+                                    {selectedCatalog
+                                        ? selectedCatalog.name
+                                        : 'Выберите каталог для загрузки *'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
+
                         <View style={styles.field}>
-                        <TouchableOpacity
-                            style={styles.selector}
-                            onPress={pickDocument}
-                        >
-                            <Text style={[
-                                styles.selectorText,
-                                !selectedFile && styles.placeholderText
-                            ]} numberOfLines={1}>
-                                {selectedFile && !selectedFile.canceled && selectedFile.assets?.[0]
-                                    ? selectedFile.assets[0].name
-                                    : 'Выберите файл *'}
-                            </Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.selector}
+                                onPress={pickDocument}
+                            >
+                                <Text style={[
+                                    styles.selectorText,
+                                    !selectedFile && styles.placeholderText
+                                ]} numberOfLines={1}>
+                                    {selectedFile && !selectedFile.canceled && selectedFile.assets?.[0]
+                                        ? selectedFile.assets[0].name
+                                        : 'Выберите файл *'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
+
                         <View style={styles.field}>
-                        <TextInput
-                            style={styles.textArea}
-                            value={description}
-                            onChangeText={setDescription}
-                            placeholder="Описание"
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
-                        />
-                            </View>
-                        {/* Статус */}
+                            <TextInput
+                                style={styles.textArea}
+                                value={description}
+                                onChangeText={setDescription}
+                                placeholder="Описание"
+                                multiline
+                                numberOfLines={5}
+                                textAlignVertical="top"
+                            />
+                        </View>
+
+                        {/* Статус обработки - новый выпадающий список */}
                         <View style={styles.field}>
-                            <Text style={styles.label}>Статус обработки</Text>
-                            <View style={styles.statusButtons}>
-                                {Object.entries(FILE_STATUSES).map(([key, value]) => (
-                                    <TouchableOpacity
-                                        key={key}
-                                        style={[
-                                            styles.statusButton,
-                                            status === value && styles.statusButtonActive
-                                        ]}
-                                        onPress={() => setStatus(status === value ? '' : value)}
-                                    >
-                                        <Text style={[
-                                            styles.statusButtonText,
-                                            status === value && styles.statusButtonTextActive
-                                        ]}>
-                                            {value}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                            <View style={styles.selectWrapper}>
+                                <TouchableOpacity
+                                    style={styles.selectTrigger}
+                                    onPress={() => setIsStatusSelectOpen(!isStatusSelectOpen)}
+                                >
+                                    <Text style={[
+                                        styles.selectValue,
+                                        !status && styles.placeholderText
+                                    ]}>
+                                        {status ? FILE_STATUSES[status] : 'Статус обработки'}
+                                    </Text>
+                                    <ChevronDown size={20} color="#666" />
+                                </TouchableOpacity>
+
+                                {isStatusSelectOpen && (
+                                    <View style={styles.selectDropdown}>
+                                        {Object.entries(FILE_STATUSES).map(([key, value]) => (
+                                            <TouchableOpacity
+                                                key={key}
+                                                style={[
+                                                    styles.selectItem,
+                                                    status === key && styles.selectItemSelected
+                                                ]}
+                                                onPress={() => {
+                                                    setStatus(key as FileStatus);
+                                                    setIsStatusSelectOpen(false);
+                                                }}
+                                            >
+                                                <Text style={[
+                                                    styles.selectItemText,
+                                                    status === key && styles.selectItemTextSelected
+                                                ]}>
+                                                    {value}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
                         </View>
 
                         {/* Даты */}
                         <View style={styles.field}>
-                            <Text style={styles.label}>Дата начала (опционально)</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={startDate}
-                                onChangeText={setStartDate}
-                                placeholder="ГГГГ-ММ-ДД"
-                            />
+                            <TouchableOpacity
+                                style={styles.selector}
+                                onPress={() => setStartPickerVisible(true)}
+                            >
+                                <Text style={[
+                                    styles.selectorText,
+                                    !startDate && styles.placeholderText
+                                ]}>
+                                    {startDate ? formatDate(startDate) : 'Выберите дату начала'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.field}>
-                            <Text style={styles.label}>Дата окончания (опционально)</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={endDate}
-                                onChangeText={setEndDate}
-                                placeholder="ГГГГ-ММ-ДД"
-                            />
+                            <TouchableOpacity
+                                style={styles.selector}
+                                onPress={() => setEndPickerVisible(true)}
+                            >
+                                <Text style={[
+                                    styles.selectorText,
+                                    !endDate && styles.placeholderText
+                                ]}>
+                                    {endDate ? formatDate(endDate) : 'Выберите дату окончания'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
 
                         {error && (
@@ -441,31 +505,52 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                                 <Text style={styles.formErrorText}>{error}</Text>
                             </View>
                         )}
-                    </ScrollView>
 
-                    <View style={[styles.modalFooter, {paddingBottom: insets.bottom + 15}]}>
-                        <TouchableOpacity
-                            style={[
-                                styles.uploadButton,
-                                (!selectedFile || !selectedCatalog || uploading) && styles.uploadButtonDisabled
-                            ]}
-                            onPress={uploadFile}
-                            disabled={!selectedFile || !selectedCatalog || uploading}
-                        >
-                            {uploading ? (
-                                <ActivityIndicator size="small" color="white" />
-                            ) : (
-                                <>
-                                    <Upload size={20} color="white" />
-                                    <Text style={styles.uploadButtonText}>Загрузить</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    </View>
+                        {/* Кнопка загрузки внутри скролла */}
+                        <View style={styles.uploadButtonContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.uploadButton,
+                                    (!selectedFile || !selectedCatalog || uploading) && styles.uploadButtonDisabled
+                                ]}
+                                onPress={uploadFile}
+                                disabled={!selectedFile || !selectedCatalog || uploading}
+                            >
+                                {uploading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <>
+                                        <Upload size={20} color="white" />
+                                        <Text style={styles.uploadButtonText}>Загрузить</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </ScrollView>
                 </View>
             </View>
 
             {renderCatalogPicker()}
+
+            {/* Пикеры даты */}
+            <DateTimePickerModal
+                isVisible={isStartPickerVisible}
+                mode="datetime"
+                onConfirm={handleStartDateConfirm}
+                onCancel={() => setStartPickerVisible(false)}
+                locale="ru_RU"
+                cancelTextIOS="Отмена"
+                confirmTextIOS="Подтвердить"
+            />
+            <DateTimePickerModal
+                isVisible={isEndPickerVisible}
+                mode="datetime"
+                onConfirm={handleEndDateConfirm}
+                onCancel={() => setEndPickerVisible(false)}
+                locale="ru_RU"
+                cancelTextIOS="Отмена"
+                confirmTextIOS="Подтвердить"
+            />
         </Modal>
     );
 };
@@ -480,8 +565,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        minHeight: '50%',
-        maxHeight: '90%',
+        height: '90%',
     },
     pickerModalContent: {
         minHeight: '70%',
@@ -500,7 +584,11 @@ const styles = StyleSheet.create({
         color: '#1f2937',
     },
     form: {
+        flex: 1,
+    },
+    formContent: {
         padding: 16,
+        paddingBottom: 24,
     },
     field: {
         marginBottom: 16,
@@ -510,9 +598,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#374151',
         marginBottom: 8,
-    },
-    required: {
-        color: '#ef4444',
     },
     selector: {
         flexDirection: 'row',
@@ -525,20 +610,11 @@ const styles = StyleSheet.create({
     },
     selectorText: {
         flex: 1,
-        marginLeft: 8,
         fontSize: 16,
         color: '#1f2937',
     },
     placeholderText: {
         color: '#9ca3af',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        backgroundColor: '#f9fafb',
     },
     textArea: {
         borderWidth: 1,
@@ -547,55 +623,80 @@ const styles = StyleSheet.create({
         padding: 12,
         fontSize: 16,
         backgroundColor: '#f9fafb',
-        minHeight: 80,
     },
-    statusButtons: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
+    // Стили для выпадающего списка
+    selectWrapper: {
+        position: 'relative',
+        zIndex: 1000,
     },
-    statusButton: {
+    selectTrigger: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#f9fafb",
+        borderWidth: 1,
+        borderColor: "#d1d5db",
+        borderRadius: 8,
         paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 12,
+    },
+    selectValue: {
+        fontSize: 16,
+        color: "#1f2937",
+        flex: 1,
+    },
+    selectDropdown: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#d1d5db',
-        backgroundColor: 'white',
-    },
-    statusButtonActive: {
-        backgroundColor: '#349339',
-        borderColor: '#349339',
-    },
-    statusButtonText: {
-        fontSize: 14,
-        color: '#374151',
-    },
-    statusButtonTextActive: {
-        color: 'white',
-    },
-    modalFooter: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        padding: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
-    },
-    cancelButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
         borderRadius: 8,
-        backgroundColor: '#f3f4f6',
+        marginTop: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        zIndex: 1001,
     },
-    cancelButtonText: {
-        fontSize: 16,
-        color: '#374151',
+    selectItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    selectItemSelected: {
+        backgroundColor: '#f0f7f0',
+    },
+    selectItemText: {
+        fontSize: 15,
+        color: '#333',
+    },
+    selectItemTextSelected: {
+        color: '#0f6319',
         fontWeight: '500',
+    },
+    checkmark: {
+        color: '#0f6319',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    // Стили для кнопки загрузки
+    uploadButtonContainer: {
+        marginTop: 16,
+        marginBottom: 0,
     },
     uploadButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
+        justifyContent: 'center',
+        paddingVertical: 12,
         borderRadius: 8,
         backgroundColor: '#349339',
         gap: 8,
