@@ -14,15 +14,17 @@ import { Yamap, Marker } from 'react-native-yamap-plus';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {ArrowLeft} from "lucide-react-native";
 import {EventAttachmentUploader} from "@/components/EventsScreen/EventAttachmentUploader";
+import {EventAttendanceModal} from "@/components/EventsScreen/EventAttendanceModal";
 
 const EventDetailsScreen: React.FC = () => {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [loading, setLoading] = useState(true);
     const [event, setEvent] = useState<Event | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [mapReady, setMapReady] = useState(false);
     const insets = useSafeAreaInsets();
     const [showUploader, setShowUploader] = useState(false);
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+
 
     const loadEvent = useCallback(async (isRefresh = false) => {
         try {
@@ -299,6 +301,10 @@ const EventDetailsScreen: React.FC = () => {
                     <Text>Прикрепить файл</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity onPress={() => setShowAttendanceModal(true)}>
+                    <Text>Отметить участие</Text>
+                </TouchableOpacity>
+
                 {/* Кнопка действия */}
                 <TouchableOpacity style={styles.actionButton}>
                     <LinearGradient
@@ -323,6 +329,16 @@ const EventDetailsScreen: React.FC = () => {
             loadEvent();
         }}
     />
+            <EventAttendanceModal
+                eventId={id}
+                visible={showAttendanceModal}
+                onClose={() => setShowAttendanceModal(false)}
+                onSuccess={() => {
+                    // Обновить данные события или статус участия
+                    //loadEvent();
+                }}
+            />
+
     </>
     );
 };
