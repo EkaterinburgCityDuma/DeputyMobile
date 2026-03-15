@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Yamap, Marker } from 'react-native-yamap-plus';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {ArrowLeft} from "lucide-react-native";
+import {EventAttachmentUploader} from "@/components/EventsScreen/EventAttachmentUploader";
 
 const EventDetailsScreen: React.FC = () => {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,7 @@ const EventDetailsScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [mapReady, setMapReady] = useState(false);
     const insets = useSafeAreaInsets();
+    const [showUploader, setShowUploader] = useState(false);
 
     const loadEvent = useCallback(async (isRefresh = false) => {
         try {
@@ -158,6 +160,7 @@ const EventDetailsScreen: React.FC = () => {
     };
 
     return (
+        <>
         <ScrollView
             style={[styles.container, { backgroundColor: '#f8fafc' }]}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -292,6 +295,10 @@ const EventDetailsScreen: React.FC = () => {
                     )}
                 </View>
 
+                <TouchableOpacity onPress={() => setShowUploader(true)}>
+                    <Text>Прикрепить файл</Text>
+                </TouchableOpacity>
+
                 {/* Кнопка действия */}
                 <TouchableOpacity style={styles.actionButton}>
                     <LinearGradient
@@ -304,8 +311,19 @@ const EventDetailsScreen: React.FC = () => {
                         <Text style={styles.actionButtonText}>Записаться</Text>
                     </LinearGradient>
                 </TouchableOpacity>
+
             </View>
         </ScrollView>
+    <EventAttachmentUploader
+        eventId={id}
+        visible={showUploader}
+        onClose={() => setShowUploader(false)}
+        onSuccess={() => {
+            // Обновить список вложений, если нужно
+            loadEvent();
+        }}
+    />
+    </>
     );
 };
 

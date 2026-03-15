@@ -12,27 +12,11 @@ import {
     Platform
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { X, Upload, FileText, Folder, ChevronRight } from 'lucide-react-native';
-import { AuthTokenManager } from '../../utils/authTokenManager';
-
-const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-
-interface Catalog {
-    id: string;
-    name: string;
-    parent_id: string | null;
-    children?: Catalog[];
-    documents?: Document[];
-}
-
-interface Document {
-    id: string;
-    file_name: string;
-    url: string;
-    uploaded_at: string;
-    uploaded_by: string;
-    catalog_id: string;
-}
+import { X, Upload, FileText, Folder, ChevronRight, AlertCircle } from 'lucide-react-native';
+import { catalogService, CatalogItem } from '@/api/catalogService';
+import { apiUrl } from '@/api/api';
+import { AuthTokenManager } from '@/components/LoginScreen/LoginScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
     eventId: string;
@@ -57,49 +41,28 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                                                          }) => {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [catalogs, setCatalogs] = useState<Catalog[]>([]);
-    const [selectedCatalog, setSelectedCatalog] = useState<Catalog | null>(null);
+    const [catalogs, setCatalogs] = useState<CatalogItem[]>([]);
+    const [selectedCatalog, setSelectedCatalog] = useState<CatalogItem | null>(null);
     const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<FileStatus | ''>('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showCatalogPicker, setShowCatalogPicker] = useState(false);
-    const [catalogPath, setCatalogPath] = useState<Catalog[]>([]);
+    const [currentPath, setCurrentPath] = useState<CatalogItem[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const insets = useSafeAreaInsets();
 
-    // Загрузка списка каталогов
+    // Загрузка публичных каталогов
     const fetchCatalogs = useCallback(async () => {
         try {
             setLoading(true);
-            const token = AuthTokenManager.getToken();
-            const response = await fetch(`${apiUrl}/api/Catalogs/public`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error fetching catalogs: ${response.status}`);
-            }
-
-            const data: Catalog[] = await response.json();
-
-            // Построение дерева каталогов
-            const buildTree = (items: Catalog[], parentId: string | null = null): Catalog[] => {
-                return items
-                    .filter(item => item.parent_id === parentId)
-                    .map(item => ({
-                        ...item,
-                        children: buildTree(items, item.id)
-                    }));
-            };
-
-            const tree = buildTree(data);
-            setCatalogs(tree);
+            setError(null);
+            const publicCatalogs = await catalogService.getPublicCatalogs();
+            setCatalogs(publicCatalogs);
         } catch (error) {
             console.error('Ошибка при загрузке каталогов:', error);
-            Alert.alert('Ошибка', 'Не удалось загрузить список каталогов');
+            setError('Не удалось загрузить список каталогов');
         } finally {
             setLoading(false);
         }
@@ -120,7 +83,8 @@ export const EventAttachmentUploader: React.FC<Props> = ({
         setStartDate('');
         setEndDate('');
         setShowCatalogPicker(false);
-        setCatalogPath([]);
+        setCurrentPath([]);
+        setError(null);
     };
 
     const handleClose = () => {
@@ -147,52 +111,27 @@ export const EventAttachmentUploader: React.FC<Props> = ({
     };
 
     // Навигация по каталогам
-    const navigateToCatalog = (catalog: Catalog, path: Catalog[] = []) => {
-        setCatalogPath([...path, catalog]);
+    const getCurrentCatalogs = (): CatalogItem[] => {
+        if (currentPath.length === 0) {
+            return catalogs;
+        }
+
+        const lastCatalog = currentPath[currentPath.length - 1];
+        return lastCatalog.children || [];
+    };
+
+    const navigateToCatalog = (catalog: CatalogItem) => {
+        setCurrentPath([...currentPath, catalog]);
     };
 
     const navigateBack = () => {
-        setCatalogPath(catalogPath.slice(0, -1));
+        setCurrentPath(currentPath.slice(0, -1));
     };
 
-    const selectCatalog = (catalog: Catalog) => {
+    const selectCatalog = (catalog: CatalogItem) => {
         setSelectedCatalog(catalog);
         setShowCatalogPicker(false);
-        setCatalogPath([]);
-    };
-
-    // Рендер дерева каталогов
-    const renderCatalogs = (items: Catalog[], level: number = 0, path: Catalog[] = []) => {
-        return items.map(catalog => {
-            const hasChildren = catalog.children && catalog.children.length > 0;
-            const currentPath = [...path, catalog];
-
-            return (
-                <View key={catalog.id}>
-                    <TouchableOpacity
-                        style={[styles.catalogItem, { paddingLeft: 16 + level * 20 }]}
-                        onPress={() => {
-                            if (hasChildren) {
-                                navigateToCatalog(catalog, currentPath);
-                            } else {
-                                selectCatalog(catalog);
-                            }
-                        }}
-                    >
-                        <View style={styles.catalogItemContent}>
-                            <Folder size={20} color="#349339" />
-                            <Text style={styles.catalogItemText}>{catalog.name}</Text>
-                        </View>
-                        {hasChildren && <ChevronRight size={20} color="#6b7280" />}
-                    </TouchableOpacity>
-
-                    {catalogPath.length > level &&
-                        catalogPath[level]?.id === catalog.id &&
-                        catalog.children &&
-                        renderCatalogs(catalog.children, level + 1, currentPath)}
-                </View>
-            );
-        });
+        setCurrentPath([]);
     };
 
     // Отправка файла
@@ -209,9 +148,11 @@ export const EventAttachmentUploader: React.FC<Props> = ({
 
         try {
             setUploading(true);
-            const token = AuthTokenManager.getToken();
+            setError(null);
 
+            const token = AuthTokenManager.getToken();
             const file = selectedFile.assets[0];
+
             const formData = new FormData();
 
             // Добавление файла
@@ -241,7 +182,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                 formData.append('EndDate', new Date(endDate).toISOString());
             }
 
-            const response = await fetch(`${apiUrl}/api/Events/attachments`, {
+            const response = await fetch(`${apiUrl}/api/Events/${eventId}/attachments`, {
                 method: 'POST',
                 headers: {
                     'Accept': '*/*',
@@ -268,12 +209,72 @@ export const EventAttachmentUploader: React.FC<Props> = ({
 
         } catch (error) {
             console.error('Ошибка при загрузке файла:', error);
-            Alert.alert('Ошибка', 'Не удалось загрузить файл');
+            setError('Не удалось загрузить файл. Попробуйте позже.');
         } finally {
             setUploading(false);
         }
     };
 
+    // Рендер списка каталогов
+    const renderCatalogList = () => {
+        const currentCatalogs = getCurrentCatalogs();
+
+        if (loading) {
+            return (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="large" color="#349339" />
+                </View>
+            );
+        }
+
+        if (error) {
+            return (
+                <View style={styles.errorContainer}>
+                    <AlertCircle size={32} color="#ef4444" />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={fetchCatalogs}
+                    >
+                        <Text style={styles.retryButtonText}>Повторить</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        if (currentCatalogs.length === 0) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Folder size={48} color="#9ca3af" />
+                    <Text style={styles.emptyText}>Нет доступных каталогов</Text>
+                </View>
+            );
+        }
+
+        return currentCatalogs.map(catalog => (
+            <TouchableOpacity
+                key={catalog.id}
+                style={styles.catalogItem}
+                onPress={() => {
+                    if (catalog.children && catalog.children.length > 0) {
+                        navigateToCatalog(catalog);
+                    } else {
+                        selectCatalog(catalog);
+                    }
+                }}
+            >
+                <View style={styles.catalogItemContent}>
+                    <Folder size={20} color="#349339" />
+                    <Text style={styles.catalogItemText}>{catalog.name}</Text>
+                </View>
+                {catalog.children && catalog.children.length > 0 && (
+                    <ChevronRight size={20} color="#6b7280" />
+                )}
+            </TouchableOpacity>
+        ));
+    };
+
+    // Рендер модалки выбора каталога
     const renderCatalogPicker = () => (
         <Modal
             visible={showCatalogPicker}
@@ -282,7 +283,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
             onRequestClose={() => setShowCatalogPicker(false)}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, styles.pickerModalContent]}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Выберите каталог</Text>
                         <TouchableOpacity onPress={() => setShowCatalogPicker(false)}>
@@ -290,7 +291,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                         </TouchableOpacity>
                     </View>
 
-                    {catalogPath.length > 0 && (
+                    {currentPath.length > 0 && (
                         <TouchableOpacity
                             style={styles.backButton}
                             onPress={navigateBack}
@@ -300,16 +301,29 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                         </TouchableOpacity>
                     )}
 
+                    {/* Хлебные крошки */}
+                    {currentPath.length > 0 && (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.breadcrumbContainer}
+                        >
+                            <TouchableOpacity onPress={() => setCurrentPath([])}>
+                                <Text style={styles.breadcrumbRoot}>Корень</Text>
+                            </TouchableOpacity>
+                            {currentPath.map((item, index) => (
+                                <View key={item.id} style={styles.breadcrumbItem}>
+                                    <Text style={styles.breadcrumbSeparator}> / </Text>
+                                    <TouchableOpacity onPress={() => setCurrentPath(currentPath.slice(0, index + 1))}>
+                                        <Text style={styles.breadcrumbText}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    )}
+
                     <ScrollView style={styles.catalogList}>
-                        {loading ? (
-                            <ActivityIndicator size="large" color="#349339" style={styles.loader} />
-                        ) : catalogs.length === 0 ? (
-                            <Text style={styles.emptyText}>Нет доступных каталогов</Text>
-                        ) : (
-                            renderCatalogs(catalogPath.length > 0 && catalogPath[catalogPath.length - 1]?.children
-                                ? catalogPath[catalogPath.length - 1].children
-                                : catalogs)
-                        )}
+                        {renderCatalogList()}
                     </ScrollView>
                 </View>
             </View>
@@ -326,67 +340,59 @@ export const EventAttachmentUploader: React.FC<Props> = ({
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Прикрепить файл</Text>
+                        <Text style={styles.modalTitle}>Прикрепить файл к событию</Text>
                         <TouchableOpacity onPress={handleClose}>
                             <X size={24} color="#374151" />
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.form}>
-                        {/* Выбор каталога */}
+                    <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
                         <View style={styles.field}>
-                            <Text style={styles.label}>Каталог <Text style={styles.required}>*</Text></Text>
-                            <TouchableOpacity
-                                style={styles.catalogSelector}
-                                onPress={() => setShowCatalogPicker(true)}
-                            >
-                                <Folder size={20} color="#6b7280" />
-                                <Text style={[
-                                    styles.catalogSelectorText,
-                                    !selectedCatalog && styles.placeholderText
-                                ]}>
-                                    {selectedCatalog ? selectedCatalog.name : 'Выберите каталог'}
-                                </Text>
-                                <ChevronRight size={20} color="#6b7280" />
-                            </TouchableOpacity>
-                        </View>
 
-                        {/* Выбор файла */}
+
+                        <TouchableOpacity
+                            style={styles.selector}
+                            onPress={() => setShowCatalogPicker(true)}
+                        >
+                            <Text style={[
+                                styles.selectorText,
+                                !selectedCatalog && styles.placeholderText
+                            ]}>
+                                {selectedCatalog
+                                    ? selectedCatalog.name
+                                    : 'Выберите каталог для загрузки *'}
+                            </Text>
+                        </TouchableOpacity>
+                        </View>
                         <View style={styles.field}>
-                            <Text style={styles.label}>Файл <Text style={styles.required}>*</Text></Text>
-                            <TouchableOpacity
-                                style={styles.fileSelector}
-                                onPress={pickDocument}
-                            >
-                                <Upload size={20} color="#6b7280" />
-                                <Text style={[
-                                    styles.fileSelectorText,
-                                    !selectedFile && styles.placeholderText
-                                ]}>
-                                    {selectedFile && !selectedFile.canceled && selectedFile.assets?.[0]
-                                        ? selectedFile.assets[0].name
-                                        : 'Выберите файл'}
-                                </Text>
-                            </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.selector}
+                            onPress={pickDocument}
+                        >
+                            <Text style={[
+                                styles.selectorText,
+                                !selectedFile && styles.placeholderText
+                            ]} numberOfLines={1}>
+                                {selectedFile && !selectedFile.canceled && selectedFile.assets?.[0]
+                                    ? selectedFile.assets[0].name
+                                    : 'Выберите файл *'}
+                            </Text>
+                        </TouchableOpacity>
                         </View>
-
-                        {/* Описание */}
                         <View style={styles.field}>
-                            <Text style={styles.label}>Описание</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={description}
-                                onChangeText={setDescription}
-                                placeholder="Введите описание файла"
-                                multiline
-                                numberOfLines={3}
-                                textAlignVertical="top"
-                            />
-                        </View>
-
+                        <TextInput
+                            style={styles.textArea}
+                            value={description}
+                            onChangeText={setDescription}
+                            placeholder="Описание"
+                            multiline
+                            numberOfLines={3}
+                            textAlignVertical="top"
+                        />
+                            </View>
                         {/* Статус */}
                         <View style={styles.field}>
-                            <Text style={styles.label}>Статус</Text>
+                            <Text style={styles.label}>Статус обработки</Text>
                             <View style={styles.statusButtons}>
                                 {Object.entries(FILE_STATUSES).map(([key, value]) => (
                                     <TouchableOpacity
@@ -408,9 +414,9 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                             </View>
                         </View>
 
-                        {/* Даты (можно добавить DatePicker компоненты) */}
+                        {/* Даты */}
                         <View style={styles.field}>
-                            <Text style={styles.label}>Дата начала</Text>
+                            <Text style={styles.label}>Дата начала (опционально)</Text>
                             <TextInput
                                 style={styles.input}
                                 value={startDate}
@@ -420,7 +426,7 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                         </View>
 
                         <View style={styles.field}>
-                            <Text style={styles.label}>Дата окончания</Text>
+                            <Text style={styles.label}>Дата окончания (опционально)</Text>
                             <TextInput
                                 style={styles.input}
                                 value={endDate}
@@ -428,17 +434,16 @@ export const EventAttachmentUploader: React.FC<Props> = ({
                                 placeholder="ГГГГ-ММ-ДД"
                             />
                         </View>
+
+                        {error && (
+                            <View style={styles.formError}>
+                                <AlertCircle size={16} color="#ef4444" />
+                                <Text style={styles.formErrorText}>{error}</Text>
+                            </View>
+                        )}
                     </ScrollView>
 
-                    <View style={styles.modalFooter}>
-                        <TouchableOpacity
-                            style={styles.cancelButton}
-                            onPress={handleClose}
-                            disabled={uploading}
-                        >
-                            <Text style={styles.cancelButtonText}>Отмена</Text>
-                        </TouchableOpacity>
-
+                    <View style={[styles.modalFooter, {paddingBottom: insets.bottom + 15}]}>
                         <TouchableOpacity
                             style={[
                                 styles.uploadButton,
@@ -478,6 +483,9 @@ const styles = StyleSheet.create({
         minHeight: '50%',
         maxHeight: '90%',
     },
+    pickerModalContent: {
+        minHeight: '70%',
+    },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -506,7 +514,7 @@ const styles = StyleSheet.create({
     required: {
         color: '#ef4444',
     },
-    catalogSelector: {
+    selector: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
@@ -515,22 +523,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         backgroundColor: '#f9fafb',
     },
-    catalogSelectorText: {
-        flex: 1,
-        marginLeft: 8,
-        fontSize: 16,
-        color: '#1f2937',
-    },
-    fileSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-        borderRadius: 8,
-        backgroundColor: '#f9fafb',
-    },
-    fileSelectorText: {
+    selectorText: {
         flex: 1,
         marginLeft: 8,
         fontSize: 16,
@@ -540,6 +533,14 @@ const styles = StyleSheet.create({
         color: '#9ca3af',
     },
     input: {
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        backgroundColor: '#f9fafb',
+    },
+    textArea: {
         borderWidth: 1,
         borderColor: '#d1d5db',
         borderRadius: 8,
@@ -578,7 +579,6 @@ const styles = StyleSheet.create({
         padding: 16,
         borderTopWidth: 1,
         borderTopColor: '#e5e7eb',
-        gap: 12,
     },
     cancelButton: {
         paddingHorizontal: 16,
@@ -608,6 +608,44 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '500',
     },
+    // Catalog picker styles
+    breadcrumbContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+        maxHeight: 44,
+    },
+    breadcrumbRoot: {
+        fontSize: 14,
+        color: '#349339',
+        fontWeight: '500',
+    },
+    breadcrumbItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    breadcrumbSeparator: {
+        fontSize: 14,
+        color: '#9ca3af',
+    },
+    breadcrumbText: {
+        fontSize: 14,
+        color: '#349339',
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+        gap: 4,
+    },
+    backButtonText: {
+        fontSize: 16,
+        color: '#349339',
+        fontWeight: '500',
+    },
     catalogList: {
         maxHeight: 400,
     },
@@ -624,31 +662,61 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
+        flex: 1,
     },
     catalogItemText: {
         fontSize: 16,
         color: '#1f2937',
+        flex: 1,
     },
-    backButton: {
-        flexDirection: 'row',
+    loaderContainer: {
+        padding: 40,
         alignItems: 'center',
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
-        gap: 4,
     },
-    backButtonText: {
+    errorContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    errorText: {
+        marginTop: 8,
         fontSize: 16,
-        color: '#349339',
+        color: '#6b7280',
+        textAlign: 'center',
+    },
+    retryButton: {
+        marginTop: 16,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: '#349339',
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: 'white',
+        fontSize: 16,
         fontWeight: '500',
     },
-    loader: {
-        padding: 20,
+    emptyContainer: {
+        padding: 40,
+        alignItems: 'center',
     },
     emptyText: {
-        textAlign: 'center',
-        padding: 20,
-        color: '#6b7280',
+        marginTop: 12,
         fontSize: 16,
+        color: '#6b7280',
+        textAlign: 'center',
+    },
+    formError: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fee2e2',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+        gap: 8,
+    },
+    formErrorText: {
+        fontSize: 14,
+        color: '#ef4444',
+        flex: 1,
     },
 });
