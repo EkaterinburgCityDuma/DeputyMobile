@@ -93,6 +93,72 @@ class TaskService {
       throw error;
     }
   }
+  async getTasksByCurrentUser(): Promise<Task[]> {
+    try {
+      const response = await this.fetchWithTimeout(`${apiUrl}/api/task/get-tasks-by-current-user`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка при получении задач: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Ошибка при получении задач:', error);
+      throw error;
+    }
+  }
+  async getAssignedTasks(): Promise<Task[]> {
+    try {
+      const response = await this.fetchWithTimeout(`${apiUrl}/api/task/get-assigned-tasks`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка при получении задач: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Ошибка при получении задач:', error);
+      throw error;
+    }
+  }
+  async getAuthorTasks(): Promise<Task[]> {
+    try {
+      const response = await this.fetchWithTimeout(`${apiUrl}/api/task/get-author-tasks`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка при получении задач: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Ошибка при получении задач:', error);
+      throw error;
+    }
+  }
+
+  async deleteTask(id: string) {
+    try {
+      const response = await this.fetchWithTimeout(`${apiUrl}/api/task/gdelete/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+    } catch (error) {
+      console.error('Ошибка при удалении задач:', error);
+      throw error;
+    }
+  }
 
   async getTaskById(id: string): Promise<Task> {
     try {
@@ -111,6 +177,25 @@ class TaskService {
     } catch (error) {
       console.error('[TaskService] Ошибка при получении задачи:', error);
       throw error;
+    }
+  }
+
+  async updateTask(taskId: string, data: {
+    title: string;
+    description: string;
+    expected_end_date: string;
+    priority: number;
+    status: string
+  }): Promise<void> {
+    const response = await this.fetchWithTimeout(`${apiUrl}/api/task/update/${taskId}`, {
+      method: 'POST', // Как указано в твоем требовании
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Ошибка при обновлении задачи');
     }
   }
 }

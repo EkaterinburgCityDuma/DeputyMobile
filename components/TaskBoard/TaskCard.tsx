@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
-import { Calendar, Layers, Users } from "lucide-react-native";
+import {Calendar, CircleDotDashed, Layers, Users} from "lucide-react-native";
 import { Task } from "@/models/TaskBoardModel";
 
 interface TaskCardProps {
@@ -43,6 +43,12 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
                 {/* Инфо-панель: Приоритет и Исполнители */}
                 <View style={styles.infoPanel}>
                     <View style={styles.tagGroup}>
+                        <View style={styles.statusTag}>
+                            <CircleDotDashed size={12} color="#2A6E3F" />
+                            <Text style={styles.statusLabel}>
+                                {task.status}
+                            </Text>
+                        </View>
                         <View style={styles.priorityTag}>
                             <Layers size={12} color="#2A6E3F" />
                             <Text style={styles.priorityLabel}>
@@ -63,7 +69,7 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
                                 <Text style={styles.userCount}>{task.users.length}</Text>
                             </View>
                         ) : (
-                            <Text style={styles.noAssignee}>Не назначена</Text>
+                            <Text style={styles.noAssignee}>Не назначен</Text>
                         )}
                     </View>
                 </View>
@@ -73,11 +79,11 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
 }
 
 const priorityConfig = {
-    low: { label: 'Низкий' },
-    medium: { label: 'Средний' },
-    high: { label: 'Высокий' },
-    urgent: { label: 'Срочный' },
-    critical: { label: 'Критический' }
+    1: { label: 'Низкий' },
+    2: { label: 'Средний' },
+    3: { label: 'Высокий' },
+    4: { label: 'Срочный' },
+    5: { label: 'Критический' }
 };
 
 const styles = StyleSheet.create({
@@ -86,7 +92,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB',
         borderRadius: 14,
-        marginBottom: 8, // Минимальный отступ между карточками
+        marginBottom: 8,
     },
     content: {
         paddingVertical: 12,
@@ -116,9 +122,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     overdueText: {
-        color: '#1F2937',
-        fontWeight: '700',
-        textDecorationLine: 'underline', // Тонкий акцент вместо красного цвета
+        color: 'rgba(207,0,31,0.8)',
     },
     description: {
         fontSize: 13,
@@ -149,6 +153,23 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '600',
         color: '#2A6E3F',
+        textTransform: 'lowercase',
+    },
+    statusTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#f0fdfd',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#DCFCE7',
+    },
+    statusLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#2a6e4f',
         textTransform: 'lowercase',
     },
     overdueTag: {
@@ -190,8 +211,5 @@ const styles = StyleSheet.create({
     dateText: {
         fontSize: 12,
         color: '#2A6E3F',
-    },
-    overdueText: {
-        color: 'rgba(207,0,31,0.8)',
     },
 });

@@ -13,16 +13,15 @@ import {
     Mail,
     Shield,
     Calendar,
-    Folder,
     ChevronRight,
-    LogOut
+    LogOut, ListTodo
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {apiUrl} from '@/api/api'
 import {AuthManager} from '@/components/LoginScreen/LoginScreen';
 import { styles } from './style';
-import {Profile} from '@/models/ProfileModel';
+import {ProfileScreenDto} from '@/models/ProfileModel';
 import { LinearGradient } from 'expo-linear-gradient';
 import {useLocalSearchParams} from "expo-router";
 
@@ -48,7 +47,7 @@ export function ProfileScreen() {
     const { id } = useLocalSearchParams<{ id?: string }>();
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
-    const [profile, setProfile] = useState<Profile | null>(null);
+    const [profile, setProfile] = useState<ProfileScreenDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -65,18 +64,11 @@ export function ProfileScreen() {
                 },
             });
 
-            if (response.status === 401) {
-                await AuthManager.clearToken();
-                setProfile(null);
-                return;
-            }
-
             const data = await response.json();
 
             setProfile(data);
         } catch (error) {
             console.error('Profile load error:', error);
-            // Alert.alert('Ошибка', 'Не удалось загрузить профиль');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -228,7 +220,7 @@ export function ProfileScreen() {
                         <View style={styles.actionContent}>
                             <Text style={styles.actionTitle}>Мои события</Text>
                             <Text style={styles.actionSubtitle}>
-                                {profile.events.length} мероприятий
+                                {profile.event_count} мероприятий
                             </Text>
                         </View>
                         <ChevronRight size={20} color="#9CA3AF" />
@@ -239,12 +231,12 @@ export function ProfileScreen() {
                         onPress={() => navigation.navigate('CatalogScreen' as never)}
                     >
                         <View style={[styles.actionIcon, { backgroundColor: '#F0FDF9' }]}>
-                            <Folder size={20} color="#0D9488" />
+                            <ListTodo size={20} color="#0D9488" />
                         </View>
                         <View style={styles.actionContent}>
-                            <Text style={styles.actionTitle}>Мои документы</Text>
+                            <Text style={styles.actionTitle}>Текущих задач</Text>
                             <Text style={styles.actionSubtitle}>
-                                {profile.documents.length} документов
+                                {profile.task_count} задачи
                             </Text>
                         </View>
                         <ChevronRight size={20} color="#9CA3AF" />

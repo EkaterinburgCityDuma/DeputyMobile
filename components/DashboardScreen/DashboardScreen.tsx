@@ -88,6 +88,7 @@ export function Dashboard() {
             }
 
             const json = await response.json();
+            console.log(json.urgent_tasks);
             setData(json);
         } catch (error) {
             console.error(error);
@@ -209,9 +210,7 @@ export function Dashboard() {
         );
     }
 
-    // Собираем все мероприятия из объекта events_by_status в один плоский массив
     const allUpcomingEvents = [...(data.events_by_status?.Going || [])].slice(0, 3);
-    // Берем первые 3 задачи
     const displayTasks : Task[] = data.tasks?.slice(0, 3) || [];
 
     return (
