@@ -7,7 +7,12 @@ import {
     StatusBar,
     Alert,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Modal,
+    KeyboardAvoidingView,
+    TextInput,
+    FlatList,
+    Platform
 } from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,19 +20,31 @@ import {
     ArrowLeft,
     Edit,
     Trash2,
-    User, Users,
+    User,
+    Users,
+    Search,
+    X
 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from "@expo/vector-icons";
 
 import { taskService } from '@/api/taskService';
-import { Task, priorityMap } from '@/models/TaskBoardModel'; // Импорт твоих моделей
+import { Task, priorityMap } from '@/models/TaskBoardModel';
 import { styles } from './task-detail-style';
-import {Ionicons} from "@expo/vector-icons";
+import { AuthManager } from "@/components/LoginScreen/LoginScreen";
+import { apiUrl } from '@/api/api';
 
 interface TaskStatusServer {
     name: string;
     isDefault: boolean;
+}
+
+interface ApiUser {
+    id: string;
+    email: string;
+    full_name: string;
+    job_title: string;
 }
 
 export function TaskDetail() {
@@ -40,10 +57,22 @@ export function TaskDetail() {
     const [refreshing, setRefreshing] = useState(false);
     const [isStatusSelectOpen, setIsStatusSelectOpen] = useState(false);
 
+    const [isAddUserModalVisible, setIsAddUserModalVisible] = useState(false);
+    const [allUsers, setAllUsers] = useState<ApiUser[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isUsersLoading, setIsUsersLoading] = useState(false);
+    const [addingUserId, setAddingUserId] = useState<string | null>(null);
+    const [removingUserId, setRemovingUserId] = useState<string | null>(null);
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    const userRole = AuthManager.getRole();
+    const userId = AuthManager.getUserId();
+    // Убедись, что метод getToken() существует в твоем AuthManager
+    const token = AuthManager.getToken ? AuthManager.getToken() : '';
+
     const loadData = useCallback(async () => {
         if (!id) return;
         try {
-            // Загружаем задачу и список доступных статусов параллельно
             const [taskData, statusesData] = await Promise.all([
                 taskService.getTaskById(id),
                 taskService.getStatuses()
@@ -70,6 +99,142 @@ export function TaskDetail() {
         setRefreshing(true);
         loadData();
     };
+
+    const fetchAllUsers = async () => {
+        setIsUsersLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/Auth/all`, {
+                method: 'GET',
+                headers: {
+                    'accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            setAllUsers(data);
+        } catch (error) {
+            Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось загрузить список пользователей' });
+        } finally {
+            setIsUsersLoading(false);
+        }
+    };
+
+    const handleOpenAddUserModal = () => {
+        setIsAddUserModalVisible(true);
+        setSearchQuery('');
+        if (allUsers.length === 0) {
+            fetchAllUsers();
+        }
+    };
+
+    const handleAddUserToTask = async (selectedUser: ApiUser) => {
+        if (!task) return;
+        setAddingUserId(selectedUser.id);
+
+        try {
+            const response = await fetch(`${apiUrl}/api/task/add-user-task/${task.task_id}?userId=${selectedUser.id}`, {
+                method: 'POST',
+                headers: {
+                    'accept': '*/*',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Ошибка сервера');
+
+            setTask(prev => prev ? {
+                ...prev,
+                users: [...(prev.users || []), {
+                    id: selectedUser.id,
+                    email: selectedUser.email,
+                    full_name: selectedUser.full_name,
+                    job_title: selectedUser.job_title
+                } as any]
+            } : null);
+
+            Toast.show({ type: 'success', text1: 'Успешно', text2: `${selectedUser.full_name || selectedUser.email} добавлен в задачу` });
+            setIsAddUserModalVisible(false);
+        } catch (error) {
+            Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось добавить пользователя' });
+        } finally {
+            setAddingUserId(null);
+        }
+    };
+    const handleRemoveUser = (targetUserId: string, targetUserName: string) => {
+        Alert.alert('Удаление исполнителя', `Удалить ${targetUserName} из задачи?`, [
+            { text: 'Отмена', style: 'cancel' },
+            {
+                text: 'Удалить',
+                style: 'destructive',
+                onPress: async () => {
+                    setRemovingUserId(targetUserId);
+                    try {
+                        const response = await fetch(`${apiUrl}/api/task/remove-user-task/${task?.task_id}?userId=${targetUserId}`, {
+                            method: 'DELETE', // Если сервер выдаст ошибку, попробуй поменять на 'POST'
+                            headers: {
+                                'accept': '*/*',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (!response.ok) throw new Error('Ошибка сервера');
+
+                        // Оптимистичное обновление: убираем юзера из локального стейта
+                        setTask(prev => prev ? {
+                            ...prev,
+                            users: prev.users?.filter(u => u.id !== targetUserId)
+                        } : null);
+
+                        Toast.show({ type: 'success', text1: 'Успешно', text2: 'Исполнитель удален' });
+                    } catch (error) {
+                        Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось удалить исполнителя' });
+                    } finally {
+                        setRemovingUserId(null);
+                    }
+                }
+            }
+        ]);
+    };
+
+    const handleArchiveTask = () => {
+        Alert.alert('Завершение задачи', 'Перенести задачу в архив?', [
+            { text: 'Отмена', style: 'cancel' },
+            {
+                text: 'Завершить',
+                onPress: async () => {
+                    setIsCompleting(true);
+                    try {
+                        const response = await fetch(`${apiUrl}/api/task/set-tasks-archived-status/${task?.task_id}?archive=true`, {
+                            method: 'POST',
+                            headers: {
+                                'accept': '*/*',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (!response.ok) throw new Error('Ошибка сервера');
+
+                        Toast.show({ type: 'success', text1: 'Успешно', text2: 'Задача завершена и перенесена в архив' });
+                        router.back(); // Возвращаемся на предыдущий экран после успешного завершения
+                    } catch (error) {
+                        Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось завершить задачу' });
+                        setIsCompleting(false);
+                    }
+                }
+            }
+        ]);
+    };
+
+    const filteredUsers = allUsers.filter(u => {
+        const isAlreadyAdded = task?.users?.some(tu => tu.id === u.id);
+        if (isAlreadyAdded) return false;
+
+        const searchLower = searchQuery.toLowerCase();
+        const nameMatch = (u.full_name || '').toLowerCase().includes(searchLower);
+        const emailMatch = (u.email || '').toLowerCase().includes(searchLower);
+
+        return nameMatch || emailMatch;
+    });
 
     const handleStatusChange = async (newStatusName: string) => {
         if (!task || !id) return;
@@ -150,17 +315,19 @@ export function TaskDetail() {
                             <ArrowLeft size={24} color="white" />
                         </TouchableOpacity>
 
-                        <View style={styles.headerActions}>
-                            <TouchableOpacity
-                                style={styles.iconButton}
-                                onPress={() => router.push({pathname: '/(forms)/NewTaskScreen', params: { id: task.task_id, isEdit: 1 }})}
-                            >
-                                <Edit size={20} color="white" />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.iconButton, { marginLeft: 10 }]} onPress={handleDelete}>
-                                <Trash2 size={20} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
+                        {(userRole === "Admin" || userId===task.author_id) && (
+                            <View style={styles.headerActions}>
+                                <TouchableOpacity
+                                    style={styles.iconButton}
+                                    onPress={() => router.push({pathname: '/(forms)/NewTaskScreen', params: { id: task.task_id, isEdit: 1 }})}
+                                >
+                                    <Edit size={20} color="white" />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.iconButton, { marginLeft: 10 }]} onPress={handleDelete}>
+                                    <Trash2 size={20} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
 
                     <View style={styles.headerContent}>
@@ -172,7 +339,6 @@ export function TaskDetail() {
                 </LinearGradient>
 
                 <View style={styles.content}>
-                    {/* Сроки — работаем напрямую с полями из JSON */}
                     <View style={styles.card}>
                         <View style={styles.timeRow}>
                             <View style={styles.timeContent}>
@@ -231,13 +397,13 @@ export function TaskDetail() {
                         )}
                     </View>
 
+
                     {/* Описание */}
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>Описание</Text>
                         <Text style={styles.description}>{task.description || 'Описание отсутствует'}</Text>
 
                         <View style={styles.priorityBadge}>
-                            {/* Используем priorityMap из твоей модели */}
                             <View style={[styles.dot, { backgroundColor: '#64748b' }]} />
                             <Text style={styles.priorityText}>
                                 Приоритет: {priorityMap[task.priority] || task.priority}
@@ -262,12 +428,20 @@ export function TaskDetail() {
 
                     {/* Исполнители */}
                     <View style={styles.card}>
-                        <View style={styles.cardHeader}>
+                        <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                             <Text style={styles.cardTitle}>Исполнители</Text>
+                            {(userRole === "Admin" || userId === task.author_id) && (
+                                <TouchableOpacity onPress={handleOpenAddUserModal}>
+                                    <Ionicons name="add-circle" size={24} color="#000" />
+                                </TouchableOpacity>
+                            )}
                         </View>
-                        {task.users.map((user) => (
-                            <View key={user.id} style={styles.attendeeRow}>
-                                <View style={[styles.avatar, {backgroundColor: '#dcfce7'}]}>
+                        {task.users?.length === 0 && (
+                            <Text style={styles.emptyText}>Нет назначенных исполнителей</Text>
+                        )}
+                        {task.users?.map((user) => (
+                            <TouchableOpacity key={user.id} style={styles.attendeeRow} onPress={() => router.push({ pathname: '/(screens)/ProfileScreen', params: { id: user.id } })}>
+                                <View style={[styles.avatar, {backgroundColor: '#dcfce7'}]} >
                                     <Text style={styles.avatarText}>
                                         {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
                                     </Text>
@@ -276,12 +450,123 @@ export function TaskDetail() {
                                     <Text style={styles.attendeeName}>{user.full_name || user.email}</Text>
                                     <Text style={styles.statusText}>{user.job_title || 'Сотрудник'}</Text>
                                 </View>
-                            </View>
-                        ))}
 
+                                {/* Кнопка удаления (крестик или корзина) */}
+                                {(userRole === "Admin" || userId === task.author_id) && task.users?.length > 1 && (
+                                    <TouchableOpacity
+                                        style={styles.removeUserBtn}
+                                        onPress={() => handleRemoveUser(user.id, user.full_name || user.email)}
+                                        disabled={removingUserId === user.id}
+                                    >
+                                        {removingUserId === user.id ? (
+                                            <ActivityIndicator size="small" color="#ef4444" />
+                                        ) : (
+                                            <X size={18} color="#000" />
+                                        )}
+                                    </TouchableOpacity>
+                                )}
+                            </TouchableOpacity>
+                        ))}
                     </View>
+                    {(userRole === "Admin" || userId === task.author_id) && (
+                        <TouchableOpacity
+                            style={styles.completeTaskBtn}
+                            onPress={handleArchiveTask}
+                            disabled={isCompleting}
+                        >
+                            {isCompleting ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.completeTaskBtnText}>Завершить задачу</Text>
+                            )}
+                        </TouchableOpacity>
+                    )}
                 </View>
+
             </ScrollView>
+
+            {/* Модалка добавления исполнителя */}
+            <Modal
+                visible={isAddUserModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsAddUserModalVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.modalOverlay}
+                >
+                    <View style={[styles.modalContent, { paddingBottom: insets.bottom || 24 }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Добавить исполнителя</Text>
+                            <TouchableOpacity onPress={() => setIsAddUserModalVisible(false)} style={styles.closeModalBtn}>
+                                <X size={24} color="#64748b" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.searchContainer}>
+                            <Search size={20} color="#94a3b8" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Поиск по имени или email..."
+                                placeholderTextColor="#94a3b8"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                    <X size={16} color="#94a3b8" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {isUsersLoading ? (
+                            <ActivityIndicator size="large" color="#2A6E3F" style={{ marginTop: 40 }} />
+                        ) : (
+                            <FlatList
+                                data={filteredUsers}
+                                keyExtractor={(item) => item.id}
+                                contentContainerStyle={{ paddingVertical: 10 }}
+                                showsVerticalScrollIndicator={false}
+                                ListEmptyComponent={
+                                    <Text style={styles.emptyListText}>
+                                        {searchQuery ? 'Сотрудники не найдены' : 'Список пуст'}
+                                    </Text>
+                                }
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.userListItem}
+                                        onPress={() => handleAddUserToTask(item)}
+                                        disabled={addingUserId !== null}
+                                    >
+                                        <View style={styles.attendeeRow}>
+                                            <View style={[styles.avatar, { backgroundColor: '#f1f5f9' }]}>
+                                                <Text style={[styles.avatarText, { color: '#475569' }]}>
+                                                    {(item.full_name || item.email || '?').charAt(0).toUpperCase()}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.attendeeInfo}>
+                                                <Text style={styles.attendeeName}>{item.full_name || item.email}</Text>
+                                                <Text style={styles.statusText}>{item.job_title || 'Сотрудник'}</Text>
+                                            </View>
+                                        </View>
+
+                                        {addingUserId === item.id ? (
+                                            <ActivityIndicator size="small" color="#2A6E3F" />
+                                        ) : (
+                                            <View style={styles.addButtonIcon}>
+                                                <Ionicons name="add" size={20} color="#2A6E3F" />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        )}
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }

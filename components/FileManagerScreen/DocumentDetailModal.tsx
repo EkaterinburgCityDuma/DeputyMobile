@@ -13,6 +13,7 @@ import {
     View
 } from 'react-native';
 import { styles } from './file-manager-screen';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface DocumentDetailModalProps {
     visible: boolean;
@@ -25,6 +26,7 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const slideAnim = useRef(new Animated.Value(1000)).current;
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (visible) {
@@ -116,7 +118,7 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
             animationType="none"
             onRequestClose={onClose}
         >
-            <View style={styles.documentDetailModalOverlay}>
+            <View style={[styles.documentDetailModalOverlay, {paddingBottom: insets.bottom}]}>
                 <Animated.View
                     style={[
                         styles.documentDetailModalContent,
@@ -137,8 +139,8 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
                     <ScrollView style={styles.documentDetailModalBody} showsVerticalScrollIndicator={false}>
                         {/* File Name */}
                         <View style={styles.documentDetailField}>
-                            <Text style={styles.documentDetailLabel}>Название файла</Text>
-                            <Text style={styles.documentDetailValue}>{document.file_name}</Text>
+                            <Text style={styles.documentDetailLabel}>Файл</Text>
+                            <Text style={styles.documentDetailValue}>{document.file_name}.{document.file_name_encoded.split('.')[1]}</Text>
                         </View>
 
                         {/* File Size */}
@@ -147,27 +149,12 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
                             <Text style={styles.documentDetailValue}>{formatFileSize(document.file_size)}</Text>
                         </View>
 
-                        {/* Content Type */}
-                        <View style={styles.documentDetailField}>
-                            <Text style={styles.documentDetailLabel}>Тип файла</Text>
-                            <Text style={styles.documentDetailValue}>{document.file_name_encoded.split('.')[1]}</Text>
-                        </View>
-
                         {/* Uploaded At */}
                         <View style={styles.documentDetailField}>
                             <Text style={styles.documentDetailLabel}>Дата загрузки</Text>
                             <Text style={styles.documentDetailValue}>{formatDate(document.uploaded_at)}</Text>
                         </View>
 
-                        {/* URL */}
-                        <View style={styles.documentDetailField}>
-                            <Text style={styles.documentDetailLabel}>Ссылка</Text>
-                            <TouchableOpacity onPress={openURL}>
-                                <Text style={[styles.documentDetailValue, { color: '#3b82f6' }]}>
-                                    {apiUrl}/{document.url}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
 
                         {/* Error Message */}
                         {deleteError && (
@@ -181,13 +168,6 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
                     {/* Footer */}
                     <View style={styles.documentDetailModalFooter}>
                         <TouchableOpacity
-                            style={styles.documentDetailButtonCancel}
-                            onPress={onClose}
-                            disabled={deleting}
-                        >
-                            <Text style={styles.documentDetailButtonCancelText}>Закрыть</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
                             style={[styles.documentDetailButtonDelete, deleting && { opacity: 0.6 }]}
                             onPress={handleDeletePress}
                             disabled={deleting}
@@ -195,7 +175,7 @@ export function DocumentDetailModal({ visible, document, onClose, onDelete }: Do
                             {deleting ? (
                                 <ActivityIndicator size="small" color="#ffffff" />
                             ) : (
-                                <Text style={styles.documentDetailButtonDeleteText}>Удалить файл</Text>
+                                <Text style={styles.documentDetailButtonDeleteText}>Удалить</Text>
                             )}
                         </TouchableOpacity>
                     </View>

@@ -385,7 +385,7 @@ export const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        maxHeight: '90%',
+        height: '90%',
         flexDirection: 'column',
     },
     documentDetailModalHeader: {
@@ -461,15 +461,18 @@ export const styles = StyleSheet.create({
     },
     documentDetailButtonDelete: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
+        flexDirection: 'row', // Чтобы иконка и текст были в ряд
+        paddingVertical: 10,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#ef4444',
+        backgroundColor: '#FFF1F0', // Очень светлый красный
+        borderWidth: 1,
+        borderColor: '#FFA39E', // Нежная рамка
     },
     documentDetailButtonDeleteText: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
-        color: '#ffffff',
+        color: '#E02424',
     },
 });

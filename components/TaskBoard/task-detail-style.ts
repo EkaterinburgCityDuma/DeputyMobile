@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 
+
 export const styles = StyleSheet.create({
     container: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -69,4 +70,107 @@ export const styles = StyleSheet.create({
     selectItemSelected: { backgroundColor: '#f0f7f0' },
     selectItemText: { fontSize: 15, color: '#4b5563' },
     selectItemTextSelected: { color: '#166534', fontWeight: '600' },
+
+
+
+    // --- Стили модального окна ---
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#ffffff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        height: '75%',
+        paddingHorizontal: 20,
+        paddingTop: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    closeModalBtn: {
+        padding: 4,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 20,
+    },
+
+    // --- Стили поиска ---
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 48,
+        marginBottom: 16,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#0f172a',
+    },
+
+    // --- Стили списка пользователей ---
+    userListItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    emptyListText: {
+        textAlign: 'center',
+        color: '#94a3b8',
+        fontSize: 16,
+        marginTop: 40,
+    },
+    addButtonIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#f0fdf4',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    removeUserBtn: {
+        padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    completeTaskBtn: {
+        backgroundColor: '#2A6E3F',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 16,
+        marginTop: 10,
+        marginBottom: 20,
+    },
+    completeTaskBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });

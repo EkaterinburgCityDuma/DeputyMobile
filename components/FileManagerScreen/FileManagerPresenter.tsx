@@ -6,8 +6,22 @@ import {
     FileSpreadsheet,
     FileText,
     Folder,
+    Image as ImageIcon,
+    Presentation,
+    Archive,
+    Music,
+    Video,
+    Terminal,
+    Code
 } from 'lucide-react-native';
+
 import {JSX, useState} from 'react';
+import {AuthManager} from "@/components/LoginScreen/LoginScreen";
+import {cacheDirectory, documentDirectory, downloadAsync} from "expo-file-system/legacy";
+import {apiUrl} from "@/api/api";
+import Toast from "react-native-toast-message";
+import * as Sharing from "expo-sharing";
+import {Alert} from "react-native";
 
 export interface FileManagerState {
     currentCatalog: CatalogItem | null;
@@ -45,6 +59,7 @@ export interface FileManagerHandlers {
     getFileIcon: (item: CatalogItem, size?: number) => JSX.Element;
     getFileSize: (fileSize: number) => string;
     handleRefresh: () => Promise<void>;
+    handleDownloadDocument: (fileName: string, serverUrl: string) => Promise<void>;
 }
 
 export interface FileManagerComputed {
@@ -433,6 +448,7 @@ export const useFileManagerPresenter = () => {
         const ext = item.name.split('.').pop()?.toLowerCase();
 
         switch (ext) {
+            // Документы
             case 'pdf':
                 return <FileText size={size} color="#ef4444" />;
             case 'doc':
@@ -441,6 +457,39 @@ export const useFileManagerPresenter = () => {
             case 'xls':
             case 'xlsx':
                 return <FileSpreadsheet size={size} color="#16a34a" />;
+            case 'txt':
+                return <FileText size={size} color="#6b7280" />;
+
+            // Презентации
+            case 'ppt':
+            case 'pptx':
+                return <Presentation size={size} color="#f97316" />;
+
+            // Архивы
+            case 'zip':
+            case 'rar':
+            case '7z':
+            case 'tar':
+            case 'gz':
+                return <Archive size={size} color="#f59e0b" />;
+
+            // Аудио
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+            case 'flac':
+            case 'aac':
+                return <Music size={size} color="#10b981" />;
+
+            // Видео
+            case 'mp4':
+            case 'avi':
+            case 'mkv':
+            case 'mov':
+            case 'wmv':
+            case 'flv':
+                return <Video size={size} color="#ef4444" />;
+
             default:
                 return <File size={size} color="#6b7280" />;
         }
@@ -513,6 +562,72 @@ export const useFileManagerPresenter = () => {
         setSelectedDocument(null);
     };
 
+    const handleDownloadDocument = async (fileName: string, serverUrl: string) => {
+        try {
+            if (!serverUrl) return;
+
+            const token = AuthManager.getToken();
+            const fileExtension = serverUrl.split('.').pop() || 'dat';
+            const localFileName = fileName.includes('.') ? fileName : `${fileName}.${fileExtension}`;
+
+            const baseDir = documentDirectory || cacheDirectory;
+            if (!baseDir) throw new Error("Директория недоступна");
+
+            const fileUri = baseDir.endsWith('/')
+                ? `${baseDir}${localFileName}`
+                : `${baseDir}/${localFileName}`;
+
+            const downloadUrl = `${apiUrl}/api/files/${encodeURIComponent(fileName)}`;
+            // Показываем предварительный тост, что загрузка началась (опционально)
+            Toast.show({
+                type: 'info',
+                text1: 'Загрузка...',
+                text2: `Файл ${localFileName} скачивается`,
+                position: 'top'
+            });
+
+            const downloadResult = await downloadAsync(
+                downloadUrl,
+                fileUri,
+                {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }
+            );
+
+            if (downloadResult.status === 200) {
+                // 1. Показываем Toast об успехе с путем к файлу
+                Toast.show({
+                    type: 'success',
+                    text1: 'Файл успешно загружен',
+                    text2: `Путь: ${localFileName}`, // Весь путь слишком длинный, лучше показать имя
+                    position: 'top',
+                    visibilityTime: 4000,
+                });
+
+                // 2. Открываем файл
+                if (await Sharing.isAvailableAsync()) {
+                    // Для Android важно указать mimeType, если сервер его прислал
+                    await Sharing.shareAsync(downloadResult.uri, {
+                        mimeType: downloadResult.headers['content-type'] || undefined,
+                        dialogTitle: 'Открыть файл',
+                    });
+                } else {
+                    Alert.alert('Загружено', `Файл сохранен по пути: ${downloadResult.uri}`);
+                }
+            } else {
+                throw new Error(`Сервер вернул ${downloadResult.status}`);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            Toast.show({
+                type: 'error',
+                text1: 'Ошибка загрузки',
+                text2: 'Не удалось сохранить файл в память',
+                position: 'bottom'
+            });
+        }
+    };
+
     const handleDeleteDocument = async (documentId: string) => {
         try {
             await documentService.deleteDocument(documentId);
@@ -581,6 +696,7 @@ export const useFileManagerPresenter = () => {
         getFileIcon,
         getFileSize,
         handleRefresh,
+        handleDownloadDocument,
     };
 
     const computed: FileManagerComputed = {

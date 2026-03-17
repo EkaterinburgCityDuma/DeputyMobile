@@ -9,15 +9,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import {
     Calendar,
-    Clock,
-    ChevronRight,
     CheckCircle2,
     Bell,
     AlertCircle,
     RefreshCw
 } from 'lucide-react-native';
 import { styles } from './style';
-import Animated, { FadeInDown, FadeInRight} from 'react-native-reanimated';
+import Animated, { FadeInDown} from 'react-native-reanimated';
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {AuthManager} from "@/components/LoginScreen/LoginScreen";
@@ -26,6 +24,7 @@ import {Event} from "@/models/EventModel"
 import {EventCard} from "@/components/EventsScreen/EventCard";
 import {Task} from "@/models/TaskBoardModel";
 import {formatDate, formatDateToDay, getDaysUntilDue} from "@/utils";
+import {TaskCard} from "@/components/TaskBoard/TaskCard";
 
 interface DashboardData {
     user_name: string;
@@ -44,8 +43,6 @@ interface DashboardData {
         NotAnswered: any[];
     };
 }
-
-
 
 export function Dashboard() {
     const insets = useSafeAreaInsets();
@@ -289,42 +286,15 @@ export function Dashboard() {
                         </View>
 
                         <View style={styles.cardsContainer}>
-                            {displayTasks.map((task: any, index: number) => {
-                                const daysLeft = getDaysUntilDue(task.dueDate);
-                                const isUrgent = daysLeft <= 2 && daysLeft >= 0;
-                                const isOverdue = daysLeft < 0;
-
-                                return (
-                                    <Animated.View
-                                        key={task.id || index}
-                                        entering={FadeInRight.delay(800 + index * 100).duration(500).springify()}
-                                    >
-                                        <TouchableOpacity style={styles.card}>
-                                            <View style={styles.cardContent}>
-                                                <View style={styles.cardTextContainer}>
-                                                    <Text style={styles.cardTitle} numberOfLines={2}>
-                                                        {task.title}
-                                                    </Text>
-                                                    <View style={styles.cardTags}>
-                                                        <View style={styles.tag}>
-                                                            <Text style={styles.tagText}>
-                                                                {task.status}
-                                                            </Text>
-                                                        </View>
-                                                        <View style={styles.timeTag}>
-                                                            <Clock size={14} color={isOverdue ? '#dc2626' : isUrgent ? '#f97316' : '#6b7280'} />
-                                                            <Text style={[styles.timeText, { color: isOverdue ? '#dc2626' : isUrgent ? '#f97316' : '#6b7280', fontWeight: '500' }]}>
-                                                                {isOverdue ? `Просрочено ${Math.abs(daysLeft)} дн.` : daysLeft === 0 ? 'Сегодня' : `${daysLeft} дн.`}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                </View>
-                                                <ChevronRight size={20} color="#9ca3af" />
-                                            </View>
-                                        </TouchableOpacity>
-                                    </Animated.View>
-                                );
-                            })}
+                            {displayTasks.map((task: any, index: number) => (
+                                <TaskCard
+                                    task={task}
+                                    onPress={() => router.push({
+                                        pathname: '/(forms)/TaskDetailScreen',
+                                        params: { id: task.task_id }
+                                    })}
+                                />
+                            ))}
                         </View>
                     </Animated.View>
                 )}

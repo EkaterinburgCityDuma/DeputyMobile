@@ -116,24 +116,25 @@ class DocumentService {
         endDate?: string
     ): Promise<Document> {
         try {
-
-            // Читаем файл как Blob
-            const fileBlob = await fetch(file.uri).then(r => r.blob());
-
             const formData = new FormData();
-
-            // Добавляем файл как Blob с именем
-            formData.append('File', fileBlob, file.name);
-
-            // Добавляем обязательные параметры
+            formData.append('File', {
+                uri: file.uri,
+                name: file.name,
+                type: file.type || 'application/octet-stream',
+            } as any);
             formData.append('CatalogId', catalogId);
-
-            // Добавляем опциональные параметры
             formData.append('DocumentStatus', (documentStatus ?? 0).toString());
-            formData.append('StartDate', startDate || '');
-            formData.append('EndDate', endDate || '');
+
+            if (startDate) {
+                formData.append('StartDate', startDate);
+            }
+
+            if (endDate) {
+                formData.append('EndDate', endDate);
+            }
 
             const token = AuthManager.getToken();
+
             const response = await fetch(
                 `${apiUrl}/api/Documents/upload`,
                 {
@@ -141,6 +142,7 @@ class DocumentService {
                     headers: {
                         'Accept': 'application/json',
                         'Authorization': token ? `Bearer ${token}` : '',
+                        'Content-Type': 'multipart/form-data',
                     },
                     body: formData,
                 }
@@ -149,12 +151,11 @@ class DocumentService {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[DocumentService] Ошибка ответа сервера:', errorText);
-                throw new Error(`Ошибка при загрузке файла: ${response.status}`);
+                throw new Error(`Ошибка при загрузке файла: ${response.status} - ${errorText}`);
             }
 
             const data: DocumentApiResponse = await response.json();
-            const document = this.adaptDocument(data);
-            return document;
+            return this.adaptDocument(data);
         } catch (error) {
             console.error('[DocumentService] Ошибка при загрузке файла:', error);
             throw error;

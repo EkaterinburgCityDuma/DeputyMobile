@@ -5,7 +5,7 @@ export interface CreateTaskPayload {
   title: string;
   description: string;
   expected_end_date: string;
-  priority: number;
+  priority: number | null;
   status: string;
 }
 
@@ -156,17 +156,11 @@ class TaskService {
     }
   }
 
-  async updateTask(taskId: string, data: {
-    title: string;
-    description: string;
-    expected_end_date: string;
-    priority: number;
-    status: string
-  }): Promise<void> {
+  async updateTask(taskId: string, payload: CreateTaskPayload): Promise<void> {
     const response = await this.fetchWithTimeout(`${apiUrl}/api/task/update/${taskId}`, {
       method: 'POST', // Как указано в твоем требовании
       headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

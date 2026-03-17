@@ -17,8 +17,8 @@ import { downloadAsync, documentDirectory, cacheDirectory } from 'expo-file-syst
 import * as Sharing from 'expo-sharing';
 import Toast from "react-native-toast-message";
 import { showLocation } from 'react-native-map-link';
+import {useFileManagerPresenter} from "@/components/FileManagerScreen/FileManagerPresenter";
 
-// Обновленные интерфейсы под новую структуру данных
 interface Attachment {
     id: string;
     document_id: string;
@@ -58,6 +58,7 @@ const EventDetailsScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const [showUploader, setShowUploader] = useState(false);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const { handlers } = useFileManagerPresenter();
 
     const loadEvent = useCallback(async (isRefresh = false) => {
         try {
@@ -172,71 +173,6 @@ const EventDetailsScreen: React.FC = () => {
         }
     };
 
-    const handleDownloadFile = async (fileName: string, serverUrl: string) => {
-        try {
-            if (!serverUrl) return;
-
-            const token = AuthManager.getToken();
-            const fileExtension = serverUrl.split('.').pop() || 'dat';
-            const localFileName = fileName.includes('.') ? fileName : `${fileName}.${fileExtension}`;
-
-            const baseDir = documentDirectory || cacheDirectory;
-            if (!baseDir) throw new Error("Директория недоступна");
-
-            const fileUri = baseDir.endsWith('/')
-                ? `${baseDir}${localFileName}`
-                : `${baseDir}/${localFileName}`;
-
-            const downloadUrl = `${apiUrl}/api/files/${encodeURIComponent(fileName)}`;
-            // Показываем предварительный тост, что загрузка началась (опционально)
-            Toast.show({
-                type: 'info',
-                text1: 'Загрузка...',
-                text2: `Файл ${localFileName} скачивается`,
-                position: 'top'
-            });
-
-            const downloadResult = await downloadAsync(
-                downloadUrl,
-                fileUri,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-
-            if (downloadResult.status === 200) {
-                // 1. Показываем Toast об успехе с путем к файлу
-                Toast.show({
-                    type: 'success',
-                    text1: 'Файл успешно загружен',
-                    text2: `Путь: ${localFileName}`, // Весь путь слишком длинный, лучше показать имя
-                    position: 'top',
-                    visibilityTime: 4000,
-                });
-
-                // 2. Открываем файл
-                if (await Sharing.isAvailableAsync()) {
-                    // Для Android важно указать mimeType, если сервер его прислал
-                    await Sharing.shareAsync(downloadResult.uri, {
-                        mimeType: downloadResult.headers['content-type'] || undefined,
-                        dialogTitle: 'Открыть файл',
-                    });
-                } else {
-                    Alert.alert('Загружено', `Файл сохранен по пути: ${downloadResult.uri}`);
-                }
-            } else {
-                throw new Error(`Сервер вернул ${downloadResult.status}`);
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Ошибка загрузки',
-                text2: 'Не удалось сохранить файл в память',
-                position: 'bottom'
-            });
-        }
-    };
 
     const getInitials = (name: string) => {
         return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -330,7 +266,7 @@ const EventDetailsScreen: React.FC = () => {
                                 <TouchableOpacity
                                     key={file.id}
                                     style={styles.fileRow}
-                                    onPress={() => handleDownloadFile(file.file_name, file.url)}
+                                    onPress={() => handlers.handleDownloadDocument(file.file_name, file.url)}
                                 >
                                     <View style={styles.fileIconContainer}>
                                         <FileText size={20} color="#0f6319" />

@@ -25,6 +25,14 @@ export const formatDateShort = (dateString: string) => {
         });
     };
 
+export const formatDateForDisplay = (date: Date) => {
+    return date.toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
 export const getDaysUntilDue = (dueDate: string) => {
     const today = new Date();
     const due = new Date(dueDate);

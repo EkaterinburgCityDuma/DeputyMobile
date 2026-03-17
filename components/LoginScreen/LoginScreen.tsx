@@ -19,14 +19,16 @@ import {Profile} from "@/models/ProfileModel"
 class AuthManager {
     private static token: string | null = null;
     private static role: string | null = null;
+    private static userId: string | null = null; // Добавлено
     private static listeners: ((token: string | null) => void)[] = [];
 
     static async initialize() {
         try {
-            const [token, role, expiry] = await Promise.all([
+            const [token, role, expiry, userId] = await Promise.all([
                 AsyncStorage.getItem('authToken'),
                 AsyncStorage.getItem('userRole'),
-                AsyncStorage.getItem('authTokenExpiry')
+                AsyncStorage.getItem('authTokenExpiry'),
+                AsyncStorage.getItem('userId') // Добавлено
             ]);
 
             if (token && expiry) {
@@ -34,6 +36,7 @@ class AuthManager {
                 if (now < parseInt(expiry, 10)) {
                     this.token = token;
                     this.role = role;
+                    this.userId = userId; // Добавлено
                 } else {
                     await this.clearAuth();
                 }
@@ -45,9 +48,11 @@ class AuthManager {
 
     static getToken() { return this.token; }
     static getRole() { return this.role; }
+    static getUserId() { return this.userId; } // Новый метод
 
-    static async setAuth(token: string, roles: string[], expiresInDays: number = 30) {
+    static async setAuth(token: string, userId: string, roles: string[], expiresInDays: number = 30) {
         this.token = token;
+        this.userId = userId; // Добавлено
         // @ts-ignore
         this.role = roles.length > 0 ? roles[0].role.name : null;
 
@@ -58,6 +63,7 @@ class AuthManager {
         try {
             await AsyncStorage.multiSet([
                 ['authToken', token],
+                ['userId', userId], // Добавлено
                 ['userRole', this.role || ''],
                 ['authTokenExpiry', expiryTimestamp]
             ]);
@@ -71,8 +77,9 @@ class AuthManager {
     static async clearAuth() {
         this.token = null;
         this.role = null;
+        this.userId = null; // Добавлено
         try {
-            await AsyncStorage.multiRemove(['authToken', 'userRole', 'authTokenExpiry', 'userData']);
+            await AsyncStorage.multiRemove(['authToken', 'userRole', 'authTokenExpiry', 'userData', 'userId']);
         } catch (e) {
             console.error('Error clearing auth:', e);
         }
@@ -135,7 +142,7 @@ const LoginScreen = () => {
             const data: AuthResponse = await response.json();
 
             // @ts-ignore
-            await AuthManager.setAuth(data.token, data.user.user_roles || []);
+            await AuthManager.setAuth(data.token, data.user.id, data.user.user_roles || []);
 
             await AsyncStorage.setItem('userData', JSON.stringify(data));
 

@@ -102,14 +102,7 @@ export function TaskBoard() {
         : tasks.filter(task => task.status === filterStatus);
 
     if (sortBy === 'priority') {
-        const priorityOrder = {
-            low: 3,
-            medium: 2,
-            high: 1,
-            urgent: 0,
-            critical: -1
-        };
-        filteredTasks.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        filteredTasks.sort((a, b) => a.priority - b.priority);
     } else {
         filteredTasks.sort((a, b) => new Date(a.expected_end_date).getTime() - new Date(b.expected_end_date).getTime());
     }
@@ -185,7 +178,7 @@ export function TaskBoard() {
                     <AlertCircle size={48} color="#EF4444" style={{ marginBottom: 16 }} />
                     <Text style={{ fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Ошибка загрузки</Text>
                     <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', marginVertical: 8 }}>{error}</Text>
-                    <TouchableOpacity style={styles.errorButton} onPress={() => loadTasks()}>
+                    <TouchableOpacity onPress={() => loadTasks()}>
                         <RotateCcw size={16} color="#fff" />
                         <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 8 }}>Повторить</Text>
                     </TouchableOpacity>

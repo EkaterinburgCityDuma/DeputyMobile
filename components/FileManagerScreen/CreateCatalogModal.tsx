@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     KeyboardAvoidingView,
-    Platform,
     Keyboard,
     TouchableWithoutFeedback,
 } from 'react-native';

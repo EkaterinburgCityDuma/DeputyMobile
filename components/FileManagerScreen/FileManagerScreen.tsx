@@ -176,6 +176,7 @@ export function FileManager() {
                                     getFileIcon={handlers.getFileIcon}
                                     getFileSize={handlers.getFileSize}
                                     onInfoPress={handlers.handleOpenDocumentDetail}
+                                    onDownloadPress={() => handlers.handleDownloadDocument(doc.file_name, doc.url)}
                                 />
                             ))}
                         </View>

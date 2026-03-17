@@ -16,8 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { router } from "expo-router";
+import {router, useLocalSearchParams} from "expo-router";
 import { taskService } from '@/api/taskService';
+import {formatDateForDisplay} from "@/utils";
 
 const PRIORITY_MAP = [
     { id: 1, label: 'Низкий' },
@@ -29,16 +30,18 @@ const PRIORITY_MAP = [
 
 export function TaskForm() {
     const insets = useSafeAreaInsets();
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const isEditMode = !!id; // Если id есть, значит мы в режиме редактирования
 
     // Поля формы
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<number | null>(null);
     const [dueDate, setDueDate] = useState<Date | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<string>("");
 
     // Статусы
     const [statuses, setStatuses] = useState<{name: string}[]>([]);
-    const [selectedStatus, setSelectedStatus] = useState<string>("");
 
     // Состояния UI
     const [isLoading, setIsLoading] = useState(true);
@@ -48,20 +51,33 @@ export function TaskForm() {
     const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false);
 
     useEffect(() => {
-        loadStatuses();
-    }, []);
+        const initForm = async () => {
+            setIsLoading(true);
+            try {
+                // 1. Сначала всегда грузим список статусов
+                const statusesData = await taskService.getStatuses();
+                setStatuses(statusesData);
 
-    const loadStatuses = async () => {
-        try {
+                // 2. Если есть ID, подгружаем данные задачи
+                if (isEditMode) {
+                    const task = await taskService.getTaskById(id);
+                    setTitle(task.title);
+                    setDescription(task.description);
+                    setPriority(task.priority);
+                    setSelectedStatus(task.status);
+                    if (task.expected_end_date) {
+                        setDueDate(new Date(task.expected_end_date));
+                    }
+                }
+            } catch (e) {
+                Toast.show({ type: 'error', text1: 'Ошибка при инициализации формы' });
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-            const data = await taskService.getStatuses();
-            setStatuses(data);
-        } catch (e) {
-            Toast.show({ type: 'error', text1: 'Ошибка загрузки статусов' });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        initForm();
+    }, [id]);
 
     const handleSubmit = async () => {
         if (!title.trim() || !description.trim() || !dueDate || !selectedStatus) {
@@ -79,23 +95,20 @@ export function TaskForm() {
                 status: selectedStatus,
             };
 
-            await taskService.createTask(payload);
-            Toast.show({ type: 'success', text1: 'Задача создана' });
-            router.push("/(screens)/TaskBoardScreen");
+            if (isEditMode) {
+                await taskService.updateTask(id, payload);
+                Toast.show({ type: 'success', text1: 'Задача обновлена' });
+            } else {
+                await taskService.createTask(payload);
+                Toast.show({ type: 'success', text1: 'Задача создана' });
+            }
+
+            router.push({ pathname: '/(forms)/TaskDetailScreen', params: { id: id } });
         } catch (error) {
             Toast.show({ type: 'error', text1: 'Ошибка при сохранении' });
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const formatDateForDisplay = (date: Date) => {
-        return date.toLocaleString('ru-RU', {
-            day: 'numeric',
-            month: 'long',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     };
 
     if (isLoading) {
@@ -127,7 +140,10 @@ export function TaskForm() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Новая задача</Text>
+                    {/* Меняем заголовок в зависимости от режима */}
+                    <Text style={styles.headerTitle}>
+                        {isEditMode ? 'Редактирование' : 'Новая задача'}
+                    </Text>
                 </LinearGradient>
 
                 <View style={styles.card}>
@@ -204,7 +220,7 @@ export function TaskForm() {
                         )}
                     </View>
 
-                    {/* Выбор приоритета (типа) */}
+                    {/* Выбор приоритета */}
                     <View style={[styles.selectWrapper, { zIndex: 900 }]}>
                         <TouchableOpacity
                             style={styles.selectTrigger}
@@ -213,9 +229,8 @@ export function TaskForm() {
                                 setIsStatusSelectOpen(false);
                             }}
                         >
-                            {/* Здесь применяем цвет плейсхолдера, если значение null */}
-                            <Text style={!priority ? styles.placeholderText : styles.selectValue}>
-                                {priority ? PRIORITY_MAP.find(p => p.id === priority)?.label : 'Приоритет *'}
+                            <Text style={priority === null ? styles.placeholderText : styles.selectValue}>
+                                {priority !== null ? PRIORITY_MAP.find(p => p.id === priority)?.label : 'Приоритет *'}
                             </Text>
                             <Ionicons
                                 name={isPrioritySelectOpen ? "chevron-up" : "chevron-down"}
@@ -258,19 +273,33 @@ export function TaskForm() {
                         onPress={handleSubmit}
                         disabled={isSubmitting}
                     >
-                        {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.publishButtonText}>Создать</Text>}
+                        {isSubmitting ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.publishButtonText}>
+                                {isEditMode ? 'Сохранить' : 'Создать'}
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </View>
             </ScrollView>
 
             <DateTimePickerModal
+
                 isVisible={isDatePickerVisible}
+
                 mode="datetime"
+
                 onConfirm={(date) => { setDueDate(date); setDatePickerVisibility(false); }}
+
                 onCancel={() => setDatePickerVisibility(false)}
+
                 locale="ru-RU"
+
                 confirmTextIOS="Выбрать"
+
                 cancelTextIOS="Отмена"
+
             />
         </KeyboardAvoidingView>
     );
