@@ -167,7 +167,7 @@ const LoginScreen = () => {
                     resizeMode="contain"
                     source={require('@/assets/images/ekb-emblem.png')}
                 />
-                <Text style={styles.title}>Цифровой кабинет депутата {apiUrl}</Text>
+                <Text style={styles.title}>Цифровой кабинет депутата</Text>
             </View>
 
             <View style={styles.form}>

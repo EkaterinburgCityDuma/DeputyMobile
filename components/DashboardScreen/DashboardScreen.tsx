@@ -23,7 +23,7 @@ import { apiUrl } from '@/api/api';
 import {Event} from "@/models/EventModel"
 import {EventCard} from "@/components/EventsScreen/EventCard";
 import {Task} from "@/models/TaskBoardModel";
-import {formatDate, formatDateToDay, getDaysUntilDue} from "@/utils";
+import {formatDateToDay} from "@/utils";
 import {TaskCard} from "@/components/TaskBoard/TaskCard";
 
 interface DashboardData {

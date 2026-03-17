@@ -77,18 +77,7 @@ export function ProfileScreen() {
 
     // Единый эффект для подписки на токен и первичной загрузки
     useEffect(() => {
-        const unsubscribe = AuthManager.addListener((newToken) => {
-            if (newToken) {
-                loadProfile();
-            } else {
-                setProfile(null);
-                setLoading(false);
-            }
-        });
-
         loadProfile(); // Начальная загрузка
-
-        return () => unsubscribe(); // Важно: вызываем функцию отписки
     }, [loadProfile]);
 
     const handleRefresh = () => {
