@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     View,
     Text,
@@ -12,7 +12,7 @@ import {
     KeyboardAvoidingView,
     TextInput,
     FlatList,
-    Platform
+    Platform, InteractionManager
 } from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
@@ -34,6 +34,7 @@ import { Task, priorityMap } from '@/models/TaskBoardModel';
 import { styles } from './task-detail-style';
 import { AuthManager } from "@/components/LoginScreen/LoginScreen";
 import { apiUrl } from '@/api/api';
+import {SkeletonLoader, SkeletonItem} from "@/components/ui/SkeletonLoader";
 
 interface TaskStatusServer {
     name: string;
@@ -67,7 +68,6 @@ export function TaskDetail() {
 
     const userRole = AuthManager.getRole();
     const userId = AuthManager.getUserId();
-    // Убедись, что метод getToken() существует в твоем AuthManager
     const token = AuthManager.getToken ? AuthManager.getToken() : '';
 
     const loadData = useCallback(async () => {
@@ -122,8 +122,11 @@ export function TaskDetail() {
     const handleOpenAddUserModal = () => {
         setIsAddUserModalVisible(true);
         setSearchQuery('');
+
         if (allUsers.length === 0) {
-            fetchAllUsers();
+            InteractionManager.runAfterInteractions(() => {
+                fetchAllUsers();
+            });
         }
     };
 
@@ -160,6 +163,7 @@ export function TaskDetail() {
             setAddingUserId(null);
         }
     };
+
     const handleRemoveUser = (targetUserId: string, targetUserName: string) => {
         Alert.alert('Удаление исполнителя', `Удалить ${targetUserName} из задачи?`, [
             { text: 'Отмена', style: 'cancel' },
@@ -170,7 +174,7 @@ export function TaskDetail() {
                     setRemovingUserId(targetUserId);
                     try {
                         const response = await fetch(`${apiUrl}/api/task/remove-user-task/${task?.task_id}?userId=${targetUserId}`, {
-                            method: 'DELETE', // Если сервер выдаст ошибку, попробуй поменять на 'POST'
+                            method: 'DELETE',
                             headers: {
                                 'accept': '*/*',
                                 'Authorization': `Bearer ${token}`
@@ -179,7 +183,6 @@ export function TaskDetail() {
 
                         if (!response.ok) throw new Error('Ошибка сервера');
 
-                        // Оптимистичное обновление: убираем юзера из локального стейта
                         setTask(prev => prev ? {
                             ...prev,
                             users: prev.users?.filter(u => u.id !== targetUserId)
@@ -215,7 +218,7 @@ export function TaskDetail() {
                         if (!response.ok) throw new Error('Ошибка сервера');
 
                         Toast.show({ type: 'success', text1: 'Успешно', text2: 'Задача завершена и перенесена в архив' });
-                        router.back(); // Возвращаемся на предыдущий экран после успешного завершения
+                        router.back();
                     } catch (error) {
                         Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось завершить задачу' });
                         setIsCompleting(false);
@@ -225,16 +228,18 @@ export function TaskDetail() {
         ]);
     };
 
-    const filteredUsers = allUsers.filter(u => {
-        const isAlreadyAdded = task?.users?.some(tu => tu.id === u.id);
-        if (isAlreadyAdded) return false;
+    const filteredUsers = useMemo(() => {
+        return allUsers.filter(u => {
+            const isAlreadyAdded = task?.users?.some(tu => tu.id === u.id);
+            if (isAlreadyAdded) return false;
 
-        const searchLower = searchQuery.toLowerCase();
-        const nameMatch = (u.full_name || '').toLowerCase().includes(searchLower);
-        const emailMatch = (u.email || '').toLowerCase().includes(searchLower);
+            const searchLower = searchQuery.toLowerCase();
+            const nameMatch = (u.full_name || '').toLowerCase().includes(searchLower);
+            const emailMatch = (u.email || '').toLowerCase().includes(searchLower);
 
-        return nameMatch || emailMatch;
-    });
+            return nameMatch || emailMatch;
+        });
+    }, [allUsers, task?.users, searchQuery]);
 
     const handleStatusChange = async (newStatusName: string) => {
         if (!task || !id) return;
@@ -283,11 +288,102 @@ export function TaskDetail() {
         ]);
     };
 
-    if (loading) return (
-        <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2A6E3F" />
+    const renderSkeleton = () => (
+        <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient
+                colors={['#2A6E3F', '#349339']}
+                style={[styles.header, { paddingTop: insets.top + 15 }]}
+            >
+                <View style={styles.headerTopRow}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <ArrowLeft size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={[styles.headerContent, {paddingBottom: 62}]}>
+                    <SkeletonItem width="80%" height={28} borderRadius={8} marginBottom={10} />
+                    <SkeletonItem width={100} height={24} borderRadius={8} />
+                </View>
+            </LinearGradient>
+
+            <View style={styles.content}>
+                {/* Карточка с датами */}
+                <View style={[styles.card, { padding: 16 }]}>
+                    <View style={styles.timeRow}>
+                        <View style={styles.timeContent}>
+                            <SkeletonItem width={60} height={12} borderRadius={4} marginBottom={8} />
+                            <SkeletonItem width={80} height={16} borderRadius={4} />
+                        </View>
+                        <View style={styles.timeDividerVertical} />
+                        <View style={styles.timeContent}>
+                            <SkeletonItem width={60} height={12} borderRadius={4} marginBottom={8} />
+                            <SkeletonItem width={80} height={16} borderRadius={4} />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Статус */}
+                <SkeletonItem width={100} height={16} borderRadius={4} marginBottom={12} />
+                <View style={[styles.selectTrigger, { marginBottom: 20 }]}>
+                    <SkeletonItem width={80} height={16} borderRadius={4} />
+                    <SkeletonItem width={20} height={20} borderRadius={10} />
+                </View>
+
+                {/* Описание */}
+                <View style={[styles.card, { padding: 16 }]}>
+                    <SkeletonItem width={80} height={16} borderRadius={4} marginBottom={12} />
+                    <SkeletonItem width="100%" height={14} borderRadius={4} marginBottom={8} />
+                    <SkeletonItem width="90%" height={14} borderRadius={4} marginBottom={8} />
+                    <SkeletonItem width="95%" height={14} borderRadius={4} marginBottom={16} />
+
+                    <View style={styles.priorityBadge}>
+                        <SkeletonItem width={100} height={14} borderRadius={4} />
+                    </View>
+                </View>
+
+                {/* Постановщик */}
+                <View style={[styles.card, { padding: 16 }]}>
+                    <View style={styles.cardHeader}>
+                        <SkeletonItem width={80} height={16} borderRadius={4} />
+                    </View>
+                    <View style={styles.attendeeRow}>
+                        <SkeletonItem width={36} height={36} borderRadius={18} />
+                        <View style={styles.attendeeInfo}>
+                            <SkeletonItem width={120} height={16} borderRadius={4} marginBottom={6} />
+                            <SkeletonItem width={80} height={12} borderRadius={4} />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Исполнители */}
+                <View style={[styles.card, { padding: 16 }]}>
+                    <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                        <SkeletonItem width={100} height={16} borderRadius={4} />
+                        <SkeletonItem width={24} height={24} borderRadius={12} />
+                    </View>
+
+                    {[1, 2, 3].map((item) => (
+                        <View key={item} style={styles.attendeeRow}>
+                            <SkeletonItem width={36} height={36} borderRadius={18}/>
+                            <View style={styles.attendeeInfo}>
+                                <SkeletonItem width={`${Math.random() * 30 + 70}%`} height={16} borderRadius={4} marginBottom={6} />
+                                <SkeletonItem width="60%" height={12} borderRadius={4} />
+                            </View>
+                            <SkeletonItem width={18} height={18} borderRadius={9} />
+                        </View>
+                    ))}
+                </View>
+
+                {/* Кнопка завершения */}
+                <SkeletonItem width="100%" height={48} borderRadius={16} marginBottom={20} />
+            </View>
         </View>
     );
+
+    if (loading) {
+        return renderSkeleton();
+    }
 
     if (!task) return (
         <View style={styles.container}>
@@ -397,7 +493,6 @@ export function TaskDetail() {
                         )}
                     </View>
 
-
                     {/* Описание */}
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>Описание</Text>
@@ -451,7 +546,6 @@ export function TaskDetail() {
                                     <Text style={styles.statusText}>{user.job_title || 'Сотрудник'}</Text>
                                 </View>
 
-                                {/* Кнопка удаления (крестик или корзина) */}
                                 {(userRole === "Admin" || userId === task.author_id) && task.users?.length > 1 && (
                                     <TouchableOpacity
                                         style={styles.removeUserBtn}
@@ -468,6 +562,7 @@ export function TaskDetail() {
                             </TouchableOpacity>
                         ))}
                     </View>
+
                     {(userRole === "Admin" || userId === task.author_id) && (
                         <TouchableOpacity
                             style={styles.completeTaskBtn}
@@ -482,7 +577,6 @@ export function TaskDetail() {
                         </TouchableOpacity>
                     )}
                 </View>
-
             </ScrollView>
 
             {/* Модалка добавления исполнителя */}
@@ -528,6 +622,10 @@ export function TaskDetail() {
                             <FlatList
                                 data={filteredUsers}
                                 keyExtractor={(item) => item.id}
+                                initialNumToRender={10}
+                                maxToRenderPerBatch={10}
+                                windowSize={5}
+                                removeClippedSubviews={true}
                                 contentContainerStyle={{ paddingVertical: 10 }}
                                 showsVerticalScrollIndicator={false}
                                 ListEmptyComponent={

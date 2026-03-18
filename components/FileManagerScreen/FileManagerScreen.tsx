@@ -24,10 +24,48 @@ import { DocumentDetailModal } from './DocumentDetailModal';
 import { useFileManagerPresenter } from './FileManagerPresenter';
 import { styles } from './file-manager-screen';
 import { CreateCatalogModal } from './CreateCatalogModal';
+import {AuthManager} from "@/components/LoginScreen/LoginScreen";
+import {useMemo} from "react";
 
 export function FileManager() {
     const { state, handlers, computed } = useFileManagerPresenter();
     const insets = useSafeAreaInsets();
+    const userRole = AuthManager.getRole();
+
+    // Определяем, нужно ли показывать кнопку создания каталога
+    const showCreateCatalogButton = useMemo(() => {
+        // Если нет текущего каталога (главный экран) - не показываем
+        if (!state.currentCatalog) return false;
+
+        // Для публичного каталога - только Admin может создавать
+        if (state.breadcrumbPath[0]?.name === 'Общий') {
+            return userRole === "Admin";
+        }
+        return true;
+    }, [state.currentCatalog, userRole]);
+
+    const showUploadButton = useMemo(() => {
+        if (!state.currentCatalog) return false;
+
+        // Проверяем, находимся ли мы в корневом каталоге
+        const isRootCatalog = state.currentCatalog.id.startsWith('root-');
+
+        // Проверяем, находимся ли мы в корне личного каталога
+        // (breadcrumb содержит только один элемент - корень)
+        const isRootOfPersonalCatalog = state.breadcrumbPath.length === 1 &&
+            state.breadcrumbPath[0]?.name === 'Личный';
+
+        // Проверяем, находимся ли мы в корне каталога депутата
+        const isRootOfDeputyCatalog = state.breadcrumbPath.length === 1 &&
+            state.breadcrumbPath[0]?.name === 'Каталог депутата';
+
+        // Если мы в любом корневом каталоге - не показываем кнопку загрузки
+        if (isRootCatalog || isRootOfPersonalCatalog || isRootOfDeputyCatalog) {
+            return false;
+        }
+
+        return true;
+    }, [state.currentCatalog, userRole, state.breadcrumbPath]);
 
     return (
         <View style={styles.container}>
@@ -45,13 +83,18 @@ export function FileManager() {
                     </Text>
                 </View>
                 <View style={styles.headerButtonsContainer}>
-                    <TouchableOpacity
+                    {/* Кнопка создания каталога - показываем только когда нужно */}
+                    {showCreateCatalogButton && (
+                        <TouchableOpacity
                             style={styles.headerButton}
                             onPress={handlers.handleOpenCreateModal}
                         >
                             <FolderPlus size={24} color="#ffffff" />
                         </TouchableOpacity>
-                    {state.currentCatalog && !state.currentCatalog.id.startsWith('root-') && (
+                    )}
+
+                    {/* Кнопка загрузки файлов - показываем только когда нужно */}
+                    {showUploadButton && (
                         <TouchableOpacity
                             style={styles.headerButton}
                             onPress={handlers.handleUploadFile}
@@ -132,18 +175,36 @@ export function FileManager() {
                 {!state.currentCatalog && !state.loading && !state.error && (
                     <View style={styles.section}>
                         <View style={styles.catalogList}>
-                            <CatalogCard
+                            {userRole === "Admin" &&
+                                <CatalogCard
                                 catalog={{ id: 'root-public', name: 'Общий', parent_catalog_id: null, type: 'catalog' }}
                                 onPress={() => handlers.handleOpenCatalog('public', 'Общий')}
-                            />
-                            <CatalogCard
-                                catalog={{ id: 'root-mine', name: 'Личный', parent_catalog_id: null, type: 'catalog' }}
-                                onPress={() => handlers.handleOpenCatalog('mine', 'Личный')}
-                            />
-                            <CatalogCard
-                                catalog={{ id: 'root-deputy', name: 'Каталог депутата', parent_catalog_id: null, type: 'catalog' }}
-                                onPress={() => handlers.handleOpenCatalog('deputy', 'Каталог депутата')}
-                            />
+                                />
+                            }
+                            {userRole === "Deputy" &&
+                                <>
+                                    <CatalogCard
+                                        catalog={{ id: 'root-public', name: 'Общий', parent_catalog_id: null, type: 'catalog' }}
+                                        onPress={() => handlers.handleOpenCatalog('public', 'Общий')}
+                                    />
+                                    <CatalogCard
+                                        catalog={{ id: 'root-mine', name: 'Личный', parent_catalog_id: null, type: 'catalog' }}
+                                        onPress={() => handlers.handleOpenCatalog('mine', 'Личный')}
+                                    />
+                                </>
+                            }
+                            {userRole === "Helper" &&
+                                <>
+                                    <CatalogCard
+                                        catalog={{ id: 'root-public', name: 'Общий', parent_catalog_id: null, type: 'catalog' }}
+                                        onPress={() => handlers.handleOpenCatalog('public', 'Общий')}
+                                    />
+                                    <CatalogCard
+                                        catalog={{ id: 'root-deputy', name: 'Каталог депутата', parent_catalog_id: null, type: 'catalog' }}
+                                        onPress={() => handlers.handleOpenCatalog('deputy', 'Каталог депутата')}
+                                    />
+                                </>
+                            }
                         </View>
                     </View>
                 )}

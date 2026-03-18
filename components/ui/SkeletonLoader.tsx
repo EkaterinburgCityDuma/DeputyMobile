@@ -16,11 +16,11 @@ interface SkeletonItemProps {
     marginBottom?: number;
 }
 
-const SkeletonItem: React.FC<SkeletonItemProps> = ({ 
-    width = '100%', 
-    height = 20, 
-    borderRadius = 4,
-    marginBottom = 8 
+export const SkeletonItem: React.FC<SkeletonItemProps> = ({
+    width = '100%',
+    height = 20,
+    borderRadius = 12,
+    marginBottom = 4
 }) => {
     const shimmerAnimation = React.useRef(new Animated.Value(0)).current;
 
@@ -68,17 +68,17 @@ interface SkeletonLoaderProps {
     itemMargin?: number;
 }
 
-export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ 
-    count = 5, 
+export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
+    count = 5,
     itemHeight = 100,
-    itemMargin = 12 
+    itemMargin = 12
 }) => {
     return (
-        <View style={{ padding: 16, flex: 1 }}>
+        <View style={{ padding: 16, flex: 1,  }}>
             {[...Array(count)].map((_, i) => (
-                <SkeletonItem 
-                    key={i} 
-                    height={itemHeight} 
+                <SkeletonItem
+                    key={i}
+                    height={itemHeight}
                     marginBottom={itemMargin}
                     width="100%"
                 />
@@ -86,5 +86,3 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
         </View>
     );
 };
-
-export default SkeletonLoader;

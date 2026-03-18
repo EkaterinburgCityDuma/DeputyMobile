@@ -98,12 +98,26 @@ export function TaskForm() {
             if (isEditMode) {
                 await taskService.updateTask(id, payload);
                 Toast.show({ type: 'success', text1: 'Задача обновлена' });
+                router.push({ pathname: '/(forms)/TaskDetailScreen', params: { id: id } });
             } else {
-                await taskService.createTask(payload);
-                Toast.show({ type: 'success', text1: 'Задача создана' });
-            }
+                const response = await taskService.createTask(payload);
+                if (response && response.errors) {
+                    const errorMessages = Object.entries(response.errors)
+                        .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+                        .join('\n');
 
-            router.push({ pathname: '/(forms)/TaskDetailScreen', params: { id: id } });
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Ошибка валидации',
+                        text2: errorMessages
+                    });
+                    return;
+                }
+                const taskId = response;
+                console.log(taskId);
+                Toast.show({ type: 'success', text1: 'Задача создана' });
+                router.push({ pathname: '/(forms)/TaskDetailScreen', params: { id: taskId } });
+            }
         } catch (error) {
             Toast.show({ type: 'error', text1: 'Ошибка при сохранении' });
         } finally {

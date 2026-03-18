@@ -27,6 +27,7 @@ import {formatDateToDay} from "@/utils";
 import {TaskCard} from "@/components/TaskBoard/TaskCard";
 
 interface DashboardData {
+    job_title: string;
     user_name: string;
     roles: string[];
     event_count: number;
@@ -239,7 +240,7 @@ export function Dashboard() {
                             </TouchableOpacity>
                         </View>
                         {/* Берем первую роль из массива как должность */}
-                        <Text style={styles.jobTitle}>{data.roles?.[0] || 'Сотрудник'}</Text>
+                        <Text style={styles.jobTitle}>{data?.job_title || 'Сотрудник'}</Text>
                         <Text style={styles.organization}>Городская Дума Екатеринбурга</Text>
                     </View>
                 </LinearGradient>

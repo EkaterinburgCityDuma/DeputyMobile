@@ -184,8 +184,8 @@ export function TaskBoard() {
                     </TouchableOpacity>
                 </View>
             ) : loading && !refreshing ? (
-                <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
-                    <SkeletonLoader count={5} itemHeight={110} itemMargin={12} />
+                <View style={{ flex: 1, marginTop: -10}}>
+                    <SkeletonLoader count={5} itemHeight={96} itemMargin={12} />
                 </View>
             ) : (
                 <FlatList

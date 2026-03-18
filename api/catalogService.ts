@@ -167,7 +167,7 @@ class CatalogService {
         try {
             const body: any = { name };
             if (parentCatalogId) {
-                body.parentCatalogId = parentCatalogId;
+                body.parent_catalog_id = parentCatalogId;
             }
 
             const response = await this.fetchWithTimeout(`${apiUrl}/api/Catalogs/create-private`, {

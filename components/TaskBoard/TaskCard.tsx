@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     deadlineBlockOverdue: {
-        // Мягкий кораллово-красный фон
         backgroundColor: '#FEE2E2',
         borderColor: '#FECACA',
         borderWidth: 1,
