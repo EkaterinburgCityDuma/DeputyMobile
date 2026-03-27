@@ -351,6 +351,7 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         marginTop: 24,
+        marginBottom: 16,
     },
     modalButton: {
         flex: 1,
