@@ -1,27 +1,20 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { Users } from 'lucide-react-native';
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    StatusBar,
-    RefreshControl,
-    Platform, ScrollView
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, StatusBar, RefreshControl, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Profile } from "@/models/ProfileModel";
-import {renderUserItem} from "@/components/UsersScreen/RenderUserItem";
-import {declOfNum} from "@/utils";
-import {Plus} from "lucide-react-native";
-import {Search} from "@/components/ui/Shared/Search";
+import { renderUserItem } from "@/components/UsersScreen/RenderUserItem";
+import { declOfNum } from "@/utils";
+
+import { Search } from "@/components/ui/Shared/Search";
 import { useTheme } from '@/context/ThemeContext';
 
 import { useUsersStore } from '@/store/useUsersStore';
-import {SkeletonLoader} from "@/components/ui/Shared/SkeletonLoader";
+import { SkeletonLoader } from "@/components/ui/Shared/SkeletonLoader";
 import { AuthManager } from '@/api/auth';
 
 const UsersListScreen = () => {
@@ -81,26 +74,9 @@ const UsersListScreen = () => {
         <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 50 }}>
             <StatusBar barStyle="light-content" translucent />
 
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 15 }]}
-            >
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Пользователи</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {loading ? 'Загрузка...' : `${filteredUsers.length} ${declOfNum(filteredUsers.length, ['человек', 'человека', 'человек'])}`}
-                    </Text>
-                </View>
-                {canCreateUser && <TouchableOpacity
-                    style={styles.newTaskButton}
-                    onPress={() => router.push('/(screens)/UsersScreen/CreateUserScreen')}
-                >
-                    <View pointerEvents={"none"}>
-                        <Plus size={20} color="white" />
-                    </View>
-                </TouchableOpacity>}
-            </LinearGradient>
+            <ScreenHeader title="Аккаунты" icon={Users}
+                subtitle={loading ? 'Загрузка…' : `${filteredUsers.length} ${declOfNum(filteredUsers.length, ['человек', 'человека', 'человек'])}`}
+                actions={canCreateUser ? <Button solid iconName="Plus" label="Создать пользователя" onClick={() => router.push('/(screens)/UsersScreen/CreateUserScreen')} /> : undefined} />
 
             <Search
                 placeholder={"Имя или email"}
@@ -178,15 +154,15 @@ export const styles = StyleSheet.create({
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 8,
-        borderRadius: 16,
+        padding: 14,
+        borderRadius: 18,
         marginBottom: 12,
         borderWidth: 1,
     },
     avatar: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -194,8 +170,8 @@ export const styles = StyleSheet.create({
     avatarText: { fontWeight: '700', fontSize: 16 },
     userInfo: { flex: 1 },
     userName: { fontSize: 15, fontWeight: '600' },
-    jobText: { fontSize: 13, marginTop: 1 },
-    roleBadge: { paddingHorizontal: 4, borderRadius: 4, marginLeft: 8 },
+    jobText: { fontSize: 12, lineHeight: 18, marginTop: 3 },
+    roleBadge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, marginLeft: 8 },
     roleBadgeText: { fontSize: 11, fontWeight: '700' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyState: { alignItems: 'center', marginTop: 60 },

@@ -1,18 +1,11 @@
-import {Platform, StyleSheet} from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        paddingBottom: 32,
-    },
-    headerContent: {
-        paddingLeft: 20,
-        paddingRight: 10,
-    },
+    header: { borderBottomLeftRadius: 24, borderBottomRightRadius: 24, paddingBottom: 24, },
+    headerContent: { paddingHorizontal: 20, },
     userInfoRow: {
         flexDirection: 'row',
         marginBottom: 10,
@@ -26,20 +19,7 @@ export const styles = StyleSheet.create({
     avatarContainer: {
         marginRight: 12,
     },
-    avatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: 'white',
-        borderWidth: 3,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
+    avatar: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', },
     avatarText: {
         color: '#2A6E3F',
         fontSize: 18,
@@ -61,15 +41,7 @@ export const styles = StyleSheet.create({
         flexWrap: 'wrap', // Разрешает перенос текста
         flexShrink: 1, // Позволяет тексту сжиматься
     },
-    notificationButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 5
-    },
+    notificationButton: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginLeft: 6, },
     jobTitle: {
         color: 'rgba(255, 255, 255, 0.9)',
         fontSize: 14,
@@ -81,66 +53,15 @@ export const styles = StyleSheet.create({
         marginLeft: 8,
         marginBottom: 8
     },
-    content: {
-        paddingHorizontal: 15,
-        marginTop: -24,
-        paddingBottom: 40,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        gap: 6,
-        marginBottom: 16,
-    },
+    content: { paddingHorizontal: 16, marginTop: 0, paddingBottom: 110, },
+    statsGrid: { flexDirection: 'row', gap: 10, marginBottom: 24, },
     statCardContainer: {
         flex: 1,
     },
-    statCard: {
-        flex: 1,
-        borderRadius: 20,
-        padding: 12,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        backgroundColor: '#ffffff',
-
-    },
-    statIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 6,
-
-        // Обязательно для iOS:
-        backgroundColor: '#fff',
-        overflow: 'visible', // Тень не будет обрезаться
-
-        // Настройки тени для iOS
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 }, // Смещение чуть больше для объема
-        shadowOpacity: 0.15, // Немного увеличили для видимости
-        shadowRadius: 8,     // Сделали тень мягче (размытее)
-
-        // Настройки для Android
-        elevation: 4,
-
-        // Фишка для Liquid Glass: тонкий блик по краю
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-    },
-    statNumber: {
-        fontSize: 22,
-        fontWeight: '700',
-        marginBottom: 4,
-        color: '#000000',
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-    },
+    statCard: { flex: 1, borderRadius: 18, borderWidth: 1, padding: 14, alignItems: 'flex-start', minHeight: 142, },
+    statIcon: { width: 34, height: 34, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginBottom: 12, },
+    statNumber: { fontSize: 28, fontWeight: '700', marginBottom: 4, letterSpacing: -0.8, },
+    statLabel: { fontSize: 11, lineHeight: 16, },
     warningBanner: {
         backgroundColor: '#ffffff',
         borderRadius: 20,
@@ -188,17 +109,8 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 12,
     },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#111827',
-        marginBottom: -5,
-        marginLeft: 2,
-    },
-    sectionLink: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
+    sectionTitle: { fontSize: 19, fontWeight: '700', letterSpacing: -0.4, },
+    sectionLink: { flexDirection: 'row', alignItems: 'center', minHeight: 44, },
     linkText: {
         fontSize: 14,
         color: '#2A6E3F',
@@ -209,13 +121,7 @@ export const styles = StyleSheet.create({
         marginTop: 4,
         gap: 4,
     },
-    eventDate: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#8f8f8f',
-        marginBottom: 4,
-        paddingHorizontal: 2,
-    },
+    eventDate: { fontSize: 13, fontWeight: '600', marginBottom: 8, paddingHorizontal: 2, },
     card: {
         backgroundColor: 'white',
         borderRadius: 20,
@@ -375,7 +281,7 @@ export const styles = StyleSheet.create({
     emptyContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 40,
+        paddingVertical: 28,
         paddingHorizontal: 20,
         backgroundColor: '#fdf9f9',
         borderRadius: 20,

@@ -1,5 +1,7 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
+import { MapPin } from 'lucide-react-native';
 import { Event } from "@/models/EventModel";
 import { useTheme } from '@/context/ThemeContext';
 
@@ -20,28 +22,10 @@ interface EventCardProps {
 
 export const EventCard: React.FC<EventCardProps> = ({ event, index = 0, onPress }) => {
     const { colors, isDark } = useTheme();
-    const slideAnim = useRef(new Animated.Value(30)).current;
-    const opacityAnim = useRef(new Animated.Value(0)).current;
 
     const isPast = useMemo(() => new Date(event.end_at) < new Date(), [event.end_at]);
     const typeStyle = getEventTypeStyles(event.type, isPast, isDark);
 
-    useEffect(() => {
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 350,
-                delay: index * 50,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-                toValue: 1,
-                duration: 350,
-                delay: index * 50,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, []);
 
     const formatTime = (dateString: string) => {
         return new Date(dateString).toLocaleTimeString('ru-RU', {
@@ -54,23 +38,18 @@ export const EventCard: React.FC<EventCardProps> = ({ event, index = 0, onPress 
     const endTime = useMemo(() => formatTime(event.end_at), [event.end_at]);
 
     return (
-        <Animated.View
-            style={[
-                styles.cardContainer,
-                { transform: [{ translateY: slideAnim }], opacity: opacityAnim },
-            ]}
-        >
-            <TouchableOpacity
-                activeOpacity={0.7}
+        <Reveal index={index} style={styles.cardContainer}>
+            <MotionPressable
+                accessibilityLabel={`${event.title}, ${startTime}`}
                 onPress={() => onPress?.(event)}
                 style={[
                     styles.cardInner,
                     { backgroundColor: colors.card, borderColor: colors.border },
-                    isPast && { backgroundColor: isDark ? '#1e293b80' : '#f8fafc' }
+                    isPast && { backgroundColor: colors.background }
                 ]}
             >
                 {/* Левая часть: Время */}
-                <View style={[styles.timeSection, { borderRightColor: colors.border }]}>
+                <View style={[styles.timeSection, { backgroundColor: colors.iconBox }]}>
                     <Text style={[styles.timeText, { color: colors.text }, isPast && styles.pastText]}>{startTime}</Text>
                     <View style={[styles.timeDivider, { backgroundColor: colors.border }]} />
                     <Text style={[styles.timeTextEnd, { color: colors.subtext }, isPast && styles.pastText]}>{endTime}</Text>
@@ -89,25 +68,29 @@ export const EventCard: React.FC<EventCardProps> = ({ event, index = 0, onPress 
                         </View>
                     </View>
                     {event.location && (
+                        <View style={styles.locationRow}>
+                        <MapPin size={13} color={colors.subtext} />
                         <Text style={[styles.location, { color: colors.subtext }]} numberOfLines={1}>
                             {event.location.split('|')[0].trim()}
                         </Text>
+                        </View>
                     )}
                 </View>
-            </TouchableOpacity>
-        </Animated.View>
+            </MotionPressable>
+        </Reveal>
     );
 };
 
 const styles = StyleSheet.create({
     cardContainer: {
-        marginBottom: 10,
+        marginBottom: 12,
     },
     cardInner: {
         flexDirection: 'row',
         backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 12,
+        borderRadius: 18,
+        padding: 14,
+        alignItems: 'center',
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
@@ -116,12 +99,13 @@ const styles = StyleSheet.create({
         borderColor: '#f1f5f9',
     },
     timeSection: {
-        width: 60,
+        width: 64,
+        minHeight: 72,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRightWidth: 1,
         borderRightColor: '#f1f5f9',
-        marginRight: 12,
+        marginRight: 14,
     },
     timeText: {
         fontSize: 15,
@@ -144,14 +128,15 @@ const styles = StyleSheet.create({
     },
     headerRow: {
         flexDirection: 'row',
-        marginBottom: 4,
+        marginBottom: 6,
     },
     typeBadge: {
         paddingHorizontal: 8,
-        borderRadius: 6,
+        paddingVertical: 3,
+        borderRadius: 7,
     },
     typeText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '500',
 
     },
@@ -160,12 +145,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1e293b',
         lineHeight: 20,
-        marginBottom: 2,
+        marginBottom: 6,
     },
     location: {
+        flex: 1,
         fontSize: 12,
         color: '#64748b',
     },
+    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     pastText: {
         color: '#94a3b8',
     },

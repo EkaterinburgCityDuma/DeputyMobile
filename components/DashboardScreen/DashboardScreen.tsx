@@ -1,19 +1,19 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
     ScrollView,
-    TouchableOpacity,
     RefreshControl,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import {
     CheckCircle2,
     Bell,
-    AlertCircle, Phone
+    AlertCircle, Phone, ChevronRight, Plus, CalendarPlus
 } from 'lucide-react-native';
 import { styles } from './style';
-import Animated, { FadeInDown} from 'react-native-reanimated';
+
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {Event} from "@/models/EventModel"
@@ -23,7 +23,7 @@ import {formatDateToDay} from "@/utils";
 import {TaskCard} from "@/components/TaskBoard/TaskCard";
 import {StatCard} from './StatCard';
 import {HeaderSkeleton} from "@/components/DashboardScreen/HeaderSkeleton";
-import {apiClient} from "@/api/api";
+
 import {useDashboardStore} from '@/store/useDashboardStore';
 import {useTheme} from '@/context/ThemeContext';
 import {SkeletonItem} from "@/components/ui/Shared/SkeletonLoader";
@@ -37,7 +37,7 @@ export function Dashboard() {
 
     useEffect(() => {
         fetchDashboardData(false);
-    }, []);
+    }, [fetchDashboardData]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -126,8 +126,8 @@ export function Dashboard() {
                         <Text style={{ fontSize: 14, marginTop: 5, textAlign: 'center', color: colors.text }}>
                             {error || 'Не удалось загрузить данные'}
                         </Text>
-                        <TouchableOpacity
-                            onPress={() => router.push("/login")}
+                        <MotionPressable
+                            onPress={() => fetchDashboardData(true)}
                             style={{
                                 backgroundColor: '#2A6E3F',
                                 paddingHorizontal: 40,
@@ -140,9 +140,9 @@ export function Dashboard() {
                             }}
                         >
                             <Text style={{ color: 'white', marginLeft: 8, fontSize: 14, fontWeight: '500' }}>
-                                Войти
+                                Повторить
                             </Text>
-                        </TouchableOpacity>
+                        </MotionPressable>
                     </View>
                 </View>
             </ScrollView>
@@ -155,13 +155,7 @@ export function Dashboard() {
 
     return (
         <View style={{ flex: 1, paddingBottom: insets.bottom + 15, backgroundColor: colors.background }}>
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{height: insets.top}}
-            >
-            </LinearGradient>
+            <View style={{ height: insets.top, backgroundColor: colors.primary }} />
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -177,68 +171,79 @@ export function Dashboard() {
                 }
             >
                 {/* 2. Теперь хедер находится внутри ScrollView и скроллится */}
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.header, { paddingTop: 15 }]}
-                >
+                <LinearGradient colors={[colors.primary, colors.secondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.header, { paddingTop: 20 }]} >
                     <View style={styles.headerContent}>
                         <View style={styles.userInfoRow}>
-                            <TouchableOpacity style={styles.userProfileButton} onPress={() => router.push({ pathname: '/(screens)/ProfileScreen', params: { id: null }})}>
+                            <MotionPressable style={styles.userProfileButton} onPress={() => router.push({ pathname: '/(screens)/ProfileScreen', params: { id: null }})}>
                                 <View style={styles.avatarContainer}>
-                                    <View style={[styles.avatar, { backgroundColor: colors.card }]}>
-                                        <Text style={[styles.avatarText, { color: colors.roleText }]}>
+                                    <View style={[styles.avatar, { backgroundColor: "rgba(255,255,255,0.16)" }]}>
+                                        <Text style={[styles.avatarText, { color: "#ffffff" }]}>
                                             {getInitials(data.user_name)}
                                         </Text>
                                     </View>
                                 </View>
                                 <View style={styles.userInfo}>
-                                    <Text style={styles.greeting}>Добрый день,</Text>
-                                    <Text style={styles.userName}>{data.user_name}</Text>
+                                    <Text style={[styles.greeting, { color: "rgba(255,255,255,0.82)" }]}>{new Date().getHours() < 12 ? 'Доброе утро,' : new Date().getHours() < 18 ? 'Добрый день,' : 'Добрый вечер,'}</Text>
+                                    <Text style={[styles.userName, { color: "#ffffff" }]} numberOfLines={2}>{data.user_name}</Text>
                                 </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.notificationButton} onPress={() => router.push("/NotificationScreen")}>
+                            </MotionPressable>
+                            <MotionPressable style={[styles.notificationButton, { backgroundColor: "rgba(255,255,255,0.16)" }]} accessibilityLabel="Уведомления" onPress={() => router.push("/NotificationScreen")}>
                                 <View pointerEvents={"none"}>
-                                    <Bell size={20} color="white" />
+                                    <Bell size={20} color="#ffffff" />
                                 </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.notificationButton} onPress={() => router.push("/PhonebookScreen")}>
+                            </MotionPressable>
+                            <MotionPressable style={[styles.notificationButton, { backgroundColor: "rgba(255,255,255,0.16)" }]} accessibilityLabel="Телефонная книга" onPress={() => router.push("/PhonebookScreen")}>
                                 <View pointerEvents={"none"}>
-                                    <Phone size={20} color="white" />
+                                    <Phone size={20} color="#ffffff" />
                                 </View>
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
-                        <Text style={styles.jobTitle}>{data?.job_title || 'Сотрудник'}</Text>
-                        <Text style={styles.organization}>Екатеринбургская городская дума</Text>
+                        <Text style={[styles.jobTitle, { color: "#ffffff" }]}>{data?.job_title || 'Сотрудник'}</Text>
+                        <Text style={[styles.organization, { color: "rgba(255,255,255,0.78)" }]}>Екатеринбургская городская дума</Text>
                     </View>
                 </LinearGradient>
 
                 <View style={styles.content}>
+                    <View style={{ marginBottom: 16, marginTop: 24 }}>
+                        <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 }}>Обзор</Text>
+                        <Text style={{ color: colors.subtext, fontSize: 14, marginTop: 4 }}>{new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+                    </View>
                     <View style={styles.statsGrid}>
                         <StatCard iconName={"Calendar"}
                                   count={data.event_count || 0}
                                   labels={['Мероприятие', 'Мероприятия', 'Мероприятий']}
-                                  delay={200}
+                                  delay={200} onPress={() => router.push({ pathname: '/(screens)/EventsScreen', params: { isMine: 'true' } })}
                         />
                         <StatCard iconName={"CheckCircle2"}
                                   count={data.task_count || 0}
                                   labels={['Задача', 'Задачи', 'Задач']}
-                                  delay={400}
+                                  delay={400} onPress={() => router.push({ pathname: '/(screens)/TaskBoardScreen', params: { isMine: 'true' } })}
                         />
                         <StatCard iconName={"AlertCircle"}
                                   count={data.urgent_tasks_count || 0}
-                                  labels={['Срочная задача', 'Срочных задачи', 'Срочных задач']}
-                                  delay={600}
+                                  labels={['Срочная задача', 'Срочные задачи', 'Срочных задач']}
+                                  delay={600} onPress={() => router.push({ pathname: '/(screens)/TaskBoardScreen', params: { isMine: 'true' } })}
                         />
                     </View>
+                    <Reveal index={2} style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+                        <MotionPressable accessibilityLabel="Создать событие" onPress={() => router.push('/(screens)/EventsScreen/CreateEventScreen')}
+                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: 14, backgroundColor: colors.primary }}>
+                            <CalendarPlus size={18} color="#fff" /><Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Событие</Text>
+                        </MotionPressable>
+                        <MotionPressable accessibilityLabel="Создать задачу" onPress={() => router.push('/(screens)/TaskBoardScreen/NewTaskScreen')}
+                            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 48, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+                            <Plus size={18} color={colors.accent} /><Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Задача</Text>
+                        </MotionPressable>
+                    </Reveal>
                     {displayTasks.length > 0 && (
-                        <Animated.View
-                            entering={FadeInDown.delay(700).duration(600)}
+                        <Reveal index={3}
                             style={styles.section}
                         >
                             <View style={styles.sectionHeader}>
                                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Мои задачи</Text>
+                                <MotionPressable style={styles.sectionLink} onPress={() => router.push({ pathname: '/(screens)/TaskBoardScreen', params: { isMine: 'true' } })} accessibilityLabel="Все мои задачи">
+                                    <Text style={[styles.linkText, { color: colors.accent }]}>Все</Text><ChevronRight size={16} color={colors.accent} />
+                                </MotionPressable>
                             </View>
 
                             <View style={styles.cardsContainer}>
@@ -253,16 +258,18 @@ export function Dashboard() {
                                     />
                                 ))}
                             </View>
-                        </Animated.View>
+                        </Reveal>
                     )}
 
                     {allUpcomingEvents.length > 0 && (
-                        <Animated.View
-                            entering={FadeInDown.delay(displayTasks.length > 0 ? 1000 : 700).duration(600)}
+                        <Reveal index={3}
                             style={styles.section}
                         >
                             <View style={styles.sectionHeader}>
-                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Предстоящие мероприятия</Text>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Ближайшие события</Text>
+                                <MotionPressable style={styles.sectionLink} onPress={() => router.push('/(screens)/EventsScreen')} accessibilityLabel="Все события">
+                                    <Text style={[styles.linkText, { color: colors.accent }]}>Все</Text><ChevronRight size={16} color={colors.accent} />
+                                </MotionPressable>
                             </View>
 
                             <View style={styles.cardsContainer}>
@@ -287,22 +294,21 @@ export function Dashboard() {
                                     );
                                 })}
                             </View>
-                        </Animated.View>
+                        </Reveal>
                     )}
 
                     {displayTasks.length === 0 && allUpcomingEvents.length === 0 && (
-                        <Animated.View
-                            entering={FadeInDown.delay(700).duration(600)}
+                        <Reveal index={3}
                             style={[styles.section]}
                         >
                             <View style={[styles.emptyContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                                <CheckCircle2 size={48} color={isDark ? "#4ade80" : "#3bb625"} />
-                                <Text style={[styles.emptyMainTitle, { color: colors.text }]}>Нет активных задач</Text>
+                                <CheckCircle2 size={40} color={colors.accent} />
+                                <Text style={[styles.emptyMainTitle, { color: colors.text }]}>Пока нет активных дел</Text>
                                 <Text style={[styles.emptyMainSubtitle, { color: colors.subtext }]}>
-                                    Идеальный момент, чтобы просто побыть в покое и насладиться тишиной
+                                    Ближайших событий и активных задач пока нет. Новые появятся здесь.
                                 </Text>
                             </View>
-                        </Animated.View>
+                        </Reveal>
                     )}
                 </View>
             </ScrollView>

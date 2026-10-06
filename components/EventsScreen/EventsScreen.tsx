@@ -1,25 +1,17 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { Calendar as CalendarIcon } from 'lucide-react-native';
 import React, { useMemo, useState, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    ActivityIndicator,
-    RefreshControl,
-    TouchableOpacity,
-    Platform,
-    ScrollView
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Platform, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { Calendar } from '@/components/EventsScreen/Calendar';
 import { EventCard } from '@/components/EventsScreen/EventCard';
 import { Event } from '@/models/EventModel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {apiClient} from "@/api/api";
-import { Plus } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+
+
+
 import { Select } from "@/components/ui/Shared/Select";
 import { SchedulePopup } from "@/components/EventsScreen/SchedulePopup";
 import { formatDate, getLocalDateKey, getTodayLocalKey } from "@/utils";
@@ -27,7 +19,7 @@ import { Filters } from '../ui/Shared/Filters';
 import { useTheme } from '@/context/ThemeContext';
 
 import { useEventsStore } from '@/store/useEventsStore';
-import {SkeletonLoader} from "@/components/ui/Shared/SkeletonLoader";
+import { SkeletonLoader } from "@/components/ui/Shared/SkeletonLoader";
 
 const EventsScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -124,7 +116,7 @@ const EventsScreen: React.FC = () => {
             }
             return eventDateKey >= todayKey;
         });
-    }, [events, selectedDate, viewMode, todayKey]);
+    }, [events, selectedDate, viewMode, todayKey, eventsFilter]);
 
     const grouped = useMemo(() => {
         const map: Record<string, Event[]> = {};
@@ -172,22 +164,8 @@ const EventsScreen: React.FC = () => {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 15 }]}
-            >
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>События</Text>
-                    <Text style={styles.headerSubtitle}>{headerSubtitleText}</Text>
-                </View>
-                <TouchableOpacity style={styles.newTaskButton} onPress={() => router.push("/(screens)/EventsScreen/CreateEventScreen")}>
-                    <View pointerEvents="none">
-                        <Plus size={20} color="white" />
-                    </View>
-                </TouchableOpacity>
-            </LinearGradient>
+            <ScreenHeader title="События" subtitle={headerSubtitleText} icon={CalendarIcon}
+                actions={<Button solid iconName="Plus" label="Создать событие" onClick={() => router.push('/(screens)/EventsScreen/CreateEventScreen')} />} />
 
             <Filters
                 title1={"Отображение"}

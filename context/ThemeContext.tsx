@@ -4,17 +4,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const themeColors = {
     light: {
-        background: '#f8fafc',
+        background: '#f4f6f5',
         card: '#ffffff',
-        text: '#1e293b',
-        subtext: '#64748b',
-        primary: '#2A6E3F',
-        secondary: '#349339',
-        border: '#f1f5f9',
-        iconBox: '#f1f5f9',
-        roleBadge: '#dcfce7',
-        roleText: '#166534',
-        divider: '#f1f5f9',
+        text: '#18241f',
+        subtext: '#637269',
+        primary: '#246343',
+        secondary: '#337a51',
+        accent: '#246343',
+        border: '#e2e8e4',
+        iconBox: '#f0f3f1',
+        roleBadge: '#e8f3ec',
+        roleText: '#246343',
+        divider: '#edf1ee',
+        danger: '#b93838',
+        dangerSurface: '#fff0ef',
         actionIcon: {
             events: '#f5f3ff',
             tasks: '#f0fdf4',
@@ -25,17 +28,20 @@ export const themeColors = {
         }
     },
     dark: {
-        background: '#0f172a',
-        card: '#1e293b',
-        text: '#f8fafc',
-        subtext: '#94a3b8',
-        primary: '#1d4d2c',
-        secondary: '#256929',
-        border: '#334155',
-        iconBox: '#334155',
-        roleBadge: '#064e3b',
-        roleText: '#dcfce7',
-        divider: '#334155',
+        background: '#101714',
+        card: '#1a2420',
+        text: '#edf3ef',
+        subtext: '#a3b3a9',
+        primary: '#286544',
+        secondary: '#347c53',
+        accent: '#91d5ad',
+        border: '#304037',
+        iconBox: '#25332b',
+        roleBadge: '#253d2e',
+        roleText: '#a4dfbb',
+        divider: '#2a3730',
+        danger: '#ffa8a0',
+        dangerSurface: '#422927',
         actionIcon: {
             events: '#2e1065',
             tasks: '#064e3b',
@@ -120,6 +126,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             document.documentElement.style.backgroundColor = colors.background;
             document.body.style.backgroundColor = colors.background;
             document.documentElement.setAttribute('data-theme', resolvedTheme);
+            document.documentElement.style.colorScheme = resolvedTheme;
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colors.background);
         }
     }, [resolvedTheme, colors.background]);
 

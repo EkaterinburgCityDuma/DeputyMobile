@@ -1,4 +1,5 @@
-import {View, StyleSheet, Text, TouchableOpacity, Platform, Linking} from "react-native";
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
+import {View, StyleSheet, Text, Platform, Linking} from "react-native";
 import {PhonebookModel} from "@/models/PhonebookModel";
 import {Phone, PhoneCall} from "lucide-react-native";
 import React from "react";
@@ -24,7 +25,7 @@ export const ContactCard = ({ item }: ContactCardProps) => {
     const { colors, isDark } = useTheme();
 
     return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: isDark ? 0 : 0.05 }]}>
+    <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: isDark ? 0 : 0.05 }]}>
         <View style={styles.cardHeader}>
             <Text style={[styles.cardName, { color: colors.text }]}>{item.full_name}</Text>
             <Text style={[styles.cardJobTitle, { color: colors.subtext }]}>{item.job_title}</Text>
@@ -37,20 +38,20 @@ export const ContactCard = ({ item }: ContactCardProps) => {
         )}
 
         <View style={styles.actionsContainer}>
-            <TouchableOpacity
+            <MotionPressable
                 style={[styles.actionButton, styles.primaryButton, { backgroundColor: colors.primary }]}
-                onPress={() => handleCall(item.internal_phone)}
+                accessibilityLabel={`Позвонить: ${item.internal_phone}`} disabled={!item.internal_phone} onPress={() => handleCall(item.internal_phone)}
             >
                 <PhoneCall size={16} color="#FFF" />
                 <View style={styles.actionTextContainer}>
                     <Text style={[styles.actionLabel, { color: isDark ? '#dcfce7' : '#E0F2E9' }]}>Внутренний</Text>
                     <Text style={[styles.actionPhone, { color: '#FFF', fontWeight: "500" }]}>{item.internal_phone}</Text>
                 </View>
-            </TouchableOpacity>
+            </MotionPressable>
 
-            <TouchableOpacity
+            <MotionPressable
                 style={[styles.actionButton, styles.secondaryButton, { backgroundColor: isDark ? colors.primary + '20' : '#E8F3EB' }]}
-                onPress={() => handleCall(item.city_phone)}
+                accessibilityLabel={`Позвонить: ${item.city_phone}`} disabled={!item.city_phone} onPress={() => handleCall(item.city_phone)}
             >
                 <Phone size={16} color={isDark ? colors.roleText : "#2A6E3F"} />
                 <View style={styles.actionTextContainer}>
@@ -59,9 +60,9 @@ export const ContactCard = ({ item }: ContactCardProps) => {
                         {item.city_phone.split(' ')[0]} {/* Показываем только первый номер визуально */}
                     </Text>
                 </View>
-            </TouchableOpacity>
+            </MotionPressable>
         </View>
-    </View>
+    </Reveal>
 )};
 
 const styles = StyleSheet.create({
@@ -117,8 +118,8 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 18,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
         borderRadius: 12,
     },
     primaryButton: {
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     actionLabel: {
-        fontSize: 9,
+        fontSize: 10,
         textTransform: 'uppercase',
         fontWeight: '600',
         letterSpacing: 0.5,

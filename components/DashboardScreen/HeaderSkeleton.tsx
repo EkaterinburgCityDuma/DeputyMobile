@@ -1,4 +1,3 @@
-import {LinearGradient} from "expo-linear-gradient";
 import {styles} from "@/components/DashboardScreen/style";
 import {TouchableOpacity, View} from "react-native";
 import {SkeletonItem} from "@/components/ui/Shared/SkeletonLoader";
@@ -12,11 +11,8 @@ interface HeaderSkeletonProps {
 export const HeaderSkeleton = ({ insetsTop }: HeaderSkeletonProps) => {
     const { colors } = useTheme();
     return (
-        <LinearGradient
-            colors={[colors.primary, colors.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.header, { paddingTop: insetsTop + 15 }]}
+        <View
+            style={[styles.header, { paddingTop: insetsTop + 20, backgroundColor: colors.primary }]}
         >
             <View style={styles.headerContent}>
                 <View style={styles.userInfoRow}>
@@ -74,6 +70,6 @@ export const HeaderSkeleton = ({ insetsTop }: HeaderSkeletonProps) => {
                     marginBottom={0}
                 />
             </View>
-        </LinearGradient>
+        </View>
     );
 };

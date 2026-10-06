@@ -1,8 +1,8 @@
+import { MotionPressable } from '@/components/ui/Shared/Motion';
 import React, { useState, useEffect, useMemo } from "react";
 import {
     View,
     Text,
-    TouchableOpacity,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -86,10 +86,10 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
         }
 
         return filteredUsers.map(user => (
-            <TouchableOpacity
+            <MotionPressable
                 key={user.id}
                 style={styles.listItem}
-                onPress={() => toggleUser(user.id)}
+                accessibilityRole="checkbox" accessibilityLabel={user.full_name} accessibilityState={{ checked: tempUserIds.includes(user.id) }} onPress={() => toggleUser(user.id)}
             >
                 <View style={styles.userInfo}>
                     <View style={styles.avatar}>
@@ -98,8 +98,8 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                         </Text>
                     </View>
                     <View style={styles.userTextBlock}>
-                        <Text style={styles.itemName}>{user.full_name}</Text>
-                        <Text style={styles.itemEmail}>{user.email}</Text>
+                        <Text numberOfLines={2} style={styles.itemName}>{user.full_name}</Text>
+                        <Text numberOfLines={1} style={styles.itemEmail}>{user.email}</Text>
                     </View>
                 </View>
 
@@ -108,7 +108,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                         <Ionicons name="checkmark" size={14} color="#fff" />
                     )}
                 </View>
-            </TouchableOpacity>
+            </MotionPressable>
         ));
     };
 
@@ -118,10 +118,10 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
         }
 
         return filteredDepartments.map(dept => (
-            <TouchableOpacity
+            <MotionPressable
                 key={dept.id}
                 style={styles.listItem}
-                onPress={() => toggleDepartment(dept.id)}
+                accessibilityRole="checkbox" accessibilityLabel={dept.name} accessibilityState={{ checked: tempDepartmentIds.includes(dept.id) }} onPress={() => toggleDepartment(dept.id)}
             >
                 <View style={styles.userInfo}>
                     <View style={styles.departmentIcon}>
@@ -142,7 +142,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                         <Ionicons name="checkmark" size={14} color="#fff" />
                     )}
                 </View>
-            </TouchableOpacity>
+            </MotionPressable>
         ));
     };
 
@@ -157,7 +157,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
             contentContainerStyle={styles.contentContainer}
             renderFooter={() => (
                 <View style={styles.actionsContainer}>
-                    <TouchableOpacity
+                    <MotionPressable
                         style={[styles.actionButton, styles.clearButton]}
                         onPress={() => {
                             setTempUserIds([]);
@@ -165,14 +165,14 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                         }}
                     >
                         <Text style={styles.clearButtonText}>Очистить все</Text>
-                    </TouchableOpacity>
+                    </MotionPressable>
 
-                    <TouchableOpacity
+                    <MotionPressable
                         style={[styles.actionButton, styles.confirmButton]}
                         onPress={handleConfirm}
                     >
-                        <Text style={styles.confirmButtonText}>Сохранить</Text>
-                    </TouchableOpacity>
+                        <Text style={styles.confirmButtonText}>Выбрать{tempUserIds.length + tempDepartmentIds.length > 0 ? ` (${tempUserIds.length + tempDepartmentIds.length})` : ""}</Text>
+                    </MotionPressable>
                 </View>
             )}
         >
@@ -182,24 +182,24 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                     <Ionicons name="search-outline" size={20} color={colors.subtext} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Поиск..."
+                        accessibilityLabel="Поиск участников" placeholder="Имя или отдел"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholderTextColor={colors.subtext}
                     />
                     {searchQuery !== "" && (
-                        <TouchableOpacity onPress={() => setSearchQuery("")}>
+                        <MotionPressable accessibilityLabel="Очистить поиск" hitSlop={12} onPress={() => setSearchQuery("")}>
                             <Ionicons name="close-circle" size={20} color={colors.subtext} />
-                        </TouchableOpacity>
+                        </MotionPressable>
                     )}
                 </View>
 
                 {/* Табы */}
                 {mode === "both" && (
                     <View style={styles.tabsContainer}>
-                        <TouchableOpacity
+                        <MotionPressable
                             style={[styles.tab, activeTab === "users" && styles.tabActive]}
-                            onPress={() => setActiveTab("users")}
+                            accessibilityRole="tab" accessibilityState={{ selected: activeTab === "users" }} onPress={() => setActiveTab("users")}
                         >
                             <Text style={[styles.tabText, activeTab === "users" && styles.tabTextActive]}>
                                 Пользователи
@@ -209,11 +209,11 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                                     <Text style={styles.tabBadgeText}>{tempUserIds.length}</Text>
                                 </View>
                             )}
-                        </TouchableOpacity>
+                        </MotionPressable>
 
-                        <TouchableOpacity
+                        <MotionPressable
                             style={[styles.tab, activeTab === "departments" && styles.tabActive]}
-                            onPress={() => setActiveTab("departments")}
+                            accessibilityRole="tab" accessibilityState={{ selected: activeTab === "departments" }} onPress={() => setActiveTab("departments")}
                         >
                             <Text style={[styles.tabText, activeTab === "departments" && styles.tabTextActive]}>
                                 Отделы
@@ -223,7 +223,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                                     <Text style={styles.tabBadgeText}>{tempDepartmentIds.length}</Text>
                                 </View>
                             )}
-                        </TouchableOpacity>
+                        </MotionPressable>
                     </View>
                 )}
 
@@ -253,11 +253,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.background,
-        marginHorizontal: 16,
+        marginHorizontal: 0,
         marginTop: 12,
         marginBottom: 12,
         paddingHorizontal: 12,
-        borderRadius: 10,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: colors.border,
     },
@@ -271,10 +271,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
 
     tabsContainer: {
         flexDirection: 'row',
-        marginHorizontal: 16,
+        marginHorizontal: 0,
         marginBottom: 12,
         backgroundColor: colors.background,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: 4,
     },
     tab: {
@@ -282,7 +282,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 8,
+        paddingVertical: 12,
         borderRadius: 8,
         gap: 6,
     },
@@ -305,7 +305,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
     },
     tabBadge: {
         backgroundColor: colors.primary,
-        borderRadius: 10,
+        borderRadius: 12,
         minWidth: 20,
         paddingHorizontal: 5,
         paddingVertical: 2,
@@ -319,7 +319,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
 
     listContainer: {
         flex: 1,
-        marginHorizontal: 16,
+        marginHorizontal: 0,
     },
     listItem: {
         flexDirection: 'row',
@@ -402,7 +402,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleShe
     actionButton: {
         flex: 1,
         paddingVertical: 12,
-        borderRadius: 10,
+        borderRadius: 12,
         alignItems: 'center',
     },
     clearButton: {

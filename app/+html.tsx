@@ -9,7 +9,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
             <meta httpEquiv="X-UA-Compatible" content="IE=edge"/>
             <meta
                 name="viewport"
-                content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, shrink-to-fit=no, viewport-fit=cover"
+                content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
             />
             <meta name="apple-mobile-web-app-capable" content="yes" />
             <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -58,6 +58,16 @@ export default function Root({ children }: { children: React.ReactNode }) {
             
                 input, textarea, select {
                     font-size: 16px !important;
+                }
+                :focus-visible {
+                    outline: 2px solid #246343;
+                    outline-offset: 3px;
+                }
+                [data-theme="dark"] :focus-visible { outline-color: #91d5ad; }
+                input:focus, textarea:focus { outline: none; }
+                input:focus-visible, textarea:focus-visible { outline: 2px solid #246343; outline-offset: 2px; }
+                @media (prefers-reduced-motion: reduce) {
+                    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
                 }
             `}} />
         </head>

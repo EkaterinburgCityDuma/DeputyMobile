@@ -1,29 +1,11 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    StatusBar,
-    Alert,
-    ActivityIndicator,
-    RefreshControl,
-    Modal,
-    KeyboardAvoidingView,
-    TextInput,
-    FlatList,
-    Platform,
-} from 'react-native';
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, StatusBar, Alert, ActivityIndicator, RefreshControl, Modal, KeyboardAvoidingView, TextInput, FlatList, Platform } from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-    ArrowLeft,
-    Edit,
-    Trash2,
-    User,
-    Search,
-    X
-} from 'lucide-react-native';
+import { ArrowLeft, User, Search, X } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
@@ -32,11 +14,13 @@ import { taskService } from '@/api/taskService';
 import { priorityMap } from '@/models/TaskBoardModel';
 import { styles } from './task-detail-style';
 import { AuthManager } from "@/api/auth";
-import {SkeletonItem} from "@/components/ui/Shared/SkeletonLoader";
+import { SkeletonItem } from "@/components/ui/Shared/SkeletonLoader";
 import { apiClient } from '@/api/api';
 import { TaskCommentComponent } from './TaskComment';
 import { CommentInput } from './CommentInput';
 import { useTheme } from '@/context/ThemeContext';
+
+import { useTaskDetailsStore } from "@/store/useTaskDetailsStore";
 
 interface TaskStatusServer {
     name: string;
@@ -80,8 +64,6 @@ export interface Task {
     comments?: TaskComment[];
     [key: string]: any;
 }
-
-import { useTaskDetailsStore } from "@/store/useTaskDetailsStore";
 
 export function TaskDetail() {
     const { colors, isDark } = useTheme();
@@ -412,15 +394,15 @@ export function TaskDetail() {
 
     const renderSkeleton = () => (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
             <LinearGradient
                 colors={[colors.primary, colors.secondary]}
                 style={[styles.header, { paddingTop: insets.top + 15 }]}
             >
                 <View style={styles.headerTopRow}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <MotionPressable style={styles.backButton} onPress={() => router.back()}>
                         <ArrowLeft size={24} color="white" />
-                    </TouchableOpacity>
+                    </MotionPressable>
                 </View>
 
                 <View style={[styles.headerContent, {paddingBottom: 62}]}>
@@ -431,7 +413,7 @@ export function TaskDetail() {
 
             <View style={styles.content}>
                 {/* Карточка с датами */}
-                <View style={[styles.card, { padding: 16, backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                <Reveal style={[styles.card, { padding: 16, backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                     <View style={styles.timeRow}>
                         <View style={styles.timeContent}>
                             <SkeletonItem width={60} height={12} borderRadius={4} marginBottom={8} />
@@ -443,7 +425,7 @@ export function TaskDetail() {
                             <SkeletonItem width={80} height={16} borderRadius={4} />
                         </View>
                     </View>
-                </View>
+                </Reveal>
 
                 {/* Статус */}
                 <SkeletonItem width={100} height={16} borderRadius={4} marginBottom={12} />
@@ -518,48 +500,20 @@ export function TaskDetail() {
             <StatusBar barStyle="light-content" />
 
             <ScrollView
-                style={styles.container}
+                style={[styles.container, { backgroundColor: colors.background }]}
                 contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header */}
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    style={[styles.header, { paddingTop: insets.top + 15 }]}
-                >
-                    <View style={styles.headerTopRow}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                            <View pointerEvents="none">
-                                <ArrowLeft size={24} color="white" />
-                            </View>
-                        </TouchableOpacity>
-
-                        {(userRole === "Admin" || userId===task.author_id) && (
-                            <View style={styles.headerActions}>
-                                <TouchableOpacity
-                                    style={styles.iconButton}
-                                    onPress={() => router.push({pathname: '/(screens)/TaskBoardScreen/NewTaskScreen', params: { id: task.task_id, isEdit: 1 }})}
-                                >
-                                    <Edit size={20} color="white" />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.iconButton, { marginLeft: 10 }]} onPress={handleDelete}>
-                                    <Trash2 size={20} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-
-                    <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle} numberOfLines={3}>{task.title}</Text>
-                        <View style={[styles.statusTag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                            <Text style={[styles.statusTagText, { color: 'white' }]}>{task.status}</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
+                <ScreenHeader stacked overlap={false} title={task.title} subtitle={task.status} onBack={() => router.back()}
+                    actions={(userRole === 'Admin' || userId === task.author_id) ? <>
+                        <Button iconName="Edit" label="Редактировать задачу" onClick={() => router.push({ pathname: '/(screens)/TaskBoardScreen/NewTaskScreen', params: { id: task.task_id, isEdit: 1 } })} />
+                        <Button danger iconName="Trash2" label="Удалить задачу" onClick={handleDelete} />
+                    </> : undefined} />
 
                 <View style={styles.content}>
-                    <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <View style={styles.timeRow}>
                             <View style={styles.timeContent}>
                                 <Text style={[styles.label, { color: colors.subtext }]}>Создано</Text>
@@ -582,11 +536,11 @@ export function TaskDetail() {
                                 </Text>
                             </View>
                         </View>
-                    </View>
+                    </Reveal>
 
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Текущий статус</Text>
                     <View style={[styles.selectWrapper, { zIndex: 1000 }]}>
-                        <TouchableOpacity
+                        <MotionPressable
                             style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => setIsStatusSelectOpen(!isStatusSelectOpen)}
                         >
@@ -596,12 +550,12 @@ export function TaskDetail() {
                                 size={20}
                                 color={colors.subtext}
                             />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
                         {isStatusSelectOpen && (
                             <View style={[styles.selectDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                                 {statuses.map((item) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         key={item.name}
                                         style={[
                                             styles.selectItem,
@@ -620,14 +574,14 @@ export function TaskDetail() {
                                         {task.status === item.name && (
                                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 ))}
                             </View>
                         )}
                     </View>
 
                     {/* Описание */}
-                    <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <Text style={[styles.sectionTitle, { color: colors.text }]}>Описание</Text>
                         <Text style={[styles.description, { color: colors.subtext }]}>{task.description || 'Описание отсутствует'}</Text>
 
@@ -637,9 +591,9 @@ export function TaskDetail() {
                                 Приоритет: {priorityMap[task.priority] || task.priority}
                             </Text>
                         </View>
-                    </View>
+                    </Reveal>
 
-                    <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <View style={styles.cardHeader}>
                             <Text style={[styles.cardTitle, { color: colors.text }]}>Постановщик</Text>
                         </View>
@@ -655,20 +609,20 @@ export function TaskDetail() {
                     </View>
 
                     {/* Исполнители */}
-                    <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                             <Text style={[styles.cardTitle, { color: colors.text }]}>Исполнители</Text>
                             {(userRole === "Admin" || userId === task.author_id) && (
-                                <TouchableOpacity onPress={handleOpenAddUserModal}>
+                                <MotionPressable onPress={handleOpenAddUserModal}>
                                     <Ionicons name="add-circle" size={24} color={isDark ? colors.subtext : colors.text} />
-                                </TouchableOpacity>
+                                </MotionPressable>
                             )}
                         </View>
                         {task.users?.length === 0 && (
                             <Text style={[styles.emptyText, { color: colors.subtext }]}>Нет назначенных исполнителей</Text>
                         )}
                         {task.users?.map((user) => (
-                            <TouchableOpacity key={user.id} style={[styles.attendeeRow, { borderBottomColor: colors.divider }]} onPress={() => router.push({ pathname: '/(screens)/ProfileScreen', params: { id: user.id } })}>
+                            <MotionPressable key={user.id} style={[styles.attendeeRow, { borderBottomColor: colors.divider }]} onPress={() => router.push({ pathname: '/(screens)/ProfileScreen', params: { id: user.id } })}>
                                 <View style={[styles.avatar, {backgroundColor: isDark ? colors.primary + '40' : '#dcfce7'}]} >
                                     <Text style={[styles.avatarText, { color: isDark ? colors.roleText : '#166534' }]}>
                                         {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
@@ -680,7 +634,7 @@ export function TaskDetail() {
                                 </View>
 
                                 {(userRole === "Admin" || userId === task.author_id) && task.users?.length > 1 && (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         style={styles.removeUserBtn}
                                         onPress={() => handleRemoveUser(user.id, user.full_name || user.email, task.task_id)}
                                         disabled={removingUserId === user.id}
@@ -690,14 +644,14 @@ export function TaskDetail() {
                                         ) : (
                                             <X size={18} color={colors.text} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 )}
-                            </TouchableOpacity>
+                            </MotionPressable>
                         ))}
                     </View>
 
                     {/* Комментарии */}
-                    <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <View style={[styles.commentsHeader]}>
                             <View style={styles.commentsHeaderLeft}>
                                 <Text style={[styles.cardTitle, { color: colors.text }]}>Комментарии</Text>
@@ -726,7 +680,7 @@ export function TaskDetail() {
                     </View>
 
                     {(userRole === "Admin" || userId === task.author_id) && (
-                        <TouchableOpacity
+                        <MotionPressable
                             style={[styles.completeTaskBtn, { backgroundColor: colors.primary }]}
                             onPress={handleArchiveTask}
                             disabled={isCompleting}
@@ -736,7 +690,7 @@ export function TaskDetail() {
                             ) : (
                                 <Text style={styles.completeTaskBtnText}>Завершить задачу</Text>
                             )}
-                        </TouchableOpacity>
+                        </MotionPressable>
                     )}
                 </View>
             </ScrollView>
@@ -755,9 +709,9 @@ export function TaskDetail() {
                     <View style={[styles.modalContent, { backgroundColor: colors.card, paddingBottom: insets.bottom || 24 }]}>
                         <View style={[styles.modalHeader, { borderBottomColor: colors.divider }]}>
                             <Text style={[styles.modalTitle, { color: colors.text }]}>Добавить исполнителя</Text>
-                            <TouchableOpacity onPress={() => setIsAddUserModalVisible(false)} style={styles.closeModalBtn}>
+                            <MotionPressable onPress={() => setIsAddUserModalVisible(false)} style={styles.closeModalBtn}>
                                 <X size={24} color={colors.subtext} />
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
 
                         <View style={[styles.searchContainer, { backgroundColor: isDark ? colors.background : '#f1f5f9' }]}>
@@ -772,9 +726,9 @@ export function TaskDetail() {
                                 autoCorrect={false}
                             />
                             {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <MotionPressable onPress={() => setSearchQuery('')}>
                                     <X size={16} color={colors.subtext} />
-                                </TouchableOpacity>
+                                </MotionPressable>
                             )}
                         </View>
 
@@ -796,7 +750,7 @@ export function TaskDetail() {
                                     </Text>
                                 }
                                 renderItem={({ item }) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         style={[styles.userListItem, { borderBottomColor: colors.divider }]}
                                         onPress={() => handleAddUserToTask(item)}
                                         disabled={addingUserId !== null}
@@ -820,7 +774,7 @@ export function TaskDetail() {
                                                 <Ionicons name="add" size={20} color={colors.primary} />
                                             </View>
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 )}
                             />
                         )}

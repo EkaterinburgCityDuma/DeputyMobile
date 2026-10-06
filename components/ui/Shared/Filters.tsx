@@ -1,6 +1,5 @@
 import {Text, View, StyleSheet} from "react-native";
 import React from "react";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/context/ThemeContext";
 
 
@@ -21,9 +20,8 @@ export const Filters = ({
     const { colors, isDark } = useTheme();
 
     return (
-        <LinearGradient
-            colors={isDark ? [colors.card, colors.background] : ['#ebfdeb', '#fff']}
-            style={[styles.filtersSection, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}
+        <View
+            style={[styles.filtersSection, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: isDark ? 0 : 0.04 }]}
         >
             <View style={styles.filtersGrid}>
                 <View style={styles.filterGroup}>
@@ -35,15 +33,16 @@ export const Filters = ({
                     {selectComponent2}
                 </View> }
             </View>
-        </LinearGradient>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     filtersSection: {
-        padding: 12,
+        padding: 14,
         marginTop: -24,
-        borderRadius: 20,
+        borderRadius: 18,
+        borderWidth: 1,
         marginHorizontal: 15,
         backgroundColor: "rgb(250,254,250)",
         shadowColor: '#000',
@@ -56,7 +55,7 @@ const styles = StyleSheet.create({
     },
     filtersGrid: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 12,
         zIndex: 15,
         overflow: 'visible'
     },
@@ -67,8 +66,9 @@ const styles = StyleSheet.create({
     },
     filterLabel: {
         fontSize: 12,
+        fontWeight: '600',
         color: '#6b7280',
-        marginBottom: 4,
+        marginBottom: 8,
         marginLeft: 2,
     },
 })

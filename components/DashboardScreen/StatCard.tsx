@@ -1,34 +1,35 @@
 import {styles} from "@/components/DashboardScreen/style";
-import Animated, {FadeInDown} from "react-native-reanimated";
-import {LinearGradient} from "expo-linear-gradient";
 import {Text, View} from "react-native";
 import {declOfNum} from "@/utils";
 import React from "react";
-import * as Icons from "lucide-react-native";
+import { Calendar, CheckCircle2, AlertCircle } from "lucide-react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
+const icons = { Calendar, CheckCircle2, AlertCircle };
 
 interface StatCardProps {
-    iconName: keyof typeof Icons;
+    iconName: keyof typeof icons;
     count: number;
     labels: [string, string, string];
     delay: number;
+    onPress?: () => void;
 }
 
-export const StatCard = ({iconName, count, labels, delay} : StatCardProps) => {
-    const { colors, isDark } = useTheme();
-    const IconComponent = Icons[iconName] as React.ComponentType<{ size: number; color: string }>;
+export const StatCard = ({iconName, count, labels, delay, onPress} : StatCardProps) => {
+    const { colors } = useTheme();
+    const IconComponent = icons[iconName];
     return(
-        <Animated.View style={styles.statCardContainer} entering={FadeInDown.delay(delay).duration(600).springify()}>
-            <LinearGradient
-                colors={isDark ? [colors.card, colors.card] : ['#ffffff', '#fffafa']}
-                style={[styles.statCard, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}
+        <Reveal style={styles.statCardContainer} index={delay / 200}>
+            <MotionPressable
+                onPress={onPress} accessibilityLabel={`${count} ${declOfNum(count, labels)}`}
+                style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-                <View style={[styles.statIcon, { backgroundColor: isDark ? colors.iconBox : '#fff', borderColor: isDark ? colors.border : 'rgba(255, 255, 255, 0.5)' }]}>
-                    <IconComponent size={20} color={colors.text} />
+                <View style={[styles.statIcon, { backgroundColor: iconName === 'AlertCircle' ? colors.dangerSurface : colors.roleBadge }]}>
+                    <IconComponent size={20} color={iconName === 'AlertCircle' ? colors.danger : colors.roleText} />
                 </View>
                 <Text style={[styles.statNumber, { color: colors.text }]}>{count}</Text>
                 <Text style={[styles.statLabel, { color: colors.subtext }]}>{declOfNum(count, labels)}</Text>
-            </LinearGradient>
-        </Animated.View>
+            </MotionPressable>
+        </Reveal>
     )
 };

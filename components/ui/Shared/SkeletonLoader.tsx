@@ -1,6 +1,7 @@
 import React from 'react';
 import { Animated, StyleSheet, View, Platform } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
+import { useReducedMotion } from 'react-native-reanimated';
 
 const styles = StyleSheet.create({
     skeleton: {
@@ -23,11 +24,13 @@ export const SkeletonItem: React.FC<SkeletonItemProps> = ({
     borderRadius = 12,
     marginBottom = 4
 }) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
+    const reducedMotion = useReducedMotion();
     const shimmerAnimation = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
-        Animated.loop(
+        if (reducedMotion) { shimmerAnimation.setValue(0.6); return; }
+        const animation = Animated.loop(
             Animated.sequence([
                 Animated.timing(shimmerAnimation, {
                     toValue: 1,
@@ -40,12 +43,14 @@ export const SkeletonItem: React.FC<SkeletonItemProps> = ({
                     useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
-        ).start();
-    }, [shimmerAnimation]);
+        );
+        animation.start();
+        return () => animation.stop();
+    }, [shimmerAnimation, reducedMotion]);
 
     const opacity = shimmerAnimation.interpolate({
         inputRange: [0, 1],
-        outputRange: isDark ? [0.1, 0.3] : [0.3, 0.7],
+        outputRange: [0.4, 0.8],
     });
 
     return (
@@ -53,7 +58,7 @@ export const SkeletonItem: React.FC<SkeletonItemProps> = ({
             style={[
                 styles.skeleton,
                 {
-                    backgroundColor: isDark ? '#334155' : '#E8E8E8',
+                    backgroundColor: colors.border,
                     width: typeof width === 'string' ? width : width,
                     height,
                     borderRadius,

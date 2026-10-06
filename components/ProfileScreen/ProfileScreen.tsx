@@ -1,38 +1,19 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import { AuthManager } from '@/api/auth';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState, useCallback, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    ActivityIndicator,
-    RefreshControl,
-    Alert, Platform
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-    UserX,
-    LogOut,
-    Mail,
-    Shield,
-    Calendar,
-    ListTodo,
-    ChevronRight,
-    Building2,
-    Edit,
-    Moon,
-    Check,
-    Monitor,
-    Sun,
-    ArrowLeft
-} from 'lucide-react-native';
-import {declOfNum} from "@/utils";
+import { UserX, Mail, Shield, Calendar, ListTodo, ChevronRight, Building2, Moon, Monitor, Sun } from 'lucide-react-native';
+import { declOfNum } from "@/utils";
 import { useFocusEffect } from '@react-navigation/native';
 import { BottomSheetModal } from '@/components/ui/BottomSheetModal/BottomSheetModal';
 import { useTheme } from '@/context/ThemeContext';
+
+
+import { useProfileStore } from '@/store/useProfileStore';
 
 
 const getInitials = (name: string) => {
@@ -49,9 +30,6 @@ const translateRole = (role: string): string => {
     };
     return roleMap[role] || role;
 };
-
-
-import { useProfileStore } from '@/store/useProfileStore';
 
 export function ProfileScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -140,9 +118,9 @@ export function ProfileScreen() {
                 <View style={styles.errorContainer}>
                     <UserX size={48} color={colors.subtext} />
                     <Text style={[styles.errorTitle, { color: colors.text }]}>Профиль не найден</Text>
-                    <TouchableOpacity onPress={() => router.push('/login')} style={[styles.errorButton, { backgroundColor: colors.primary }]}>
+                    <MotionPressable onPress={() => router.push('/login')} style={[styles.errorButton, { backgroundColor: colors.primary }]}>
                         <Text style={styles.errorButtonText}>Войти</Text>
-                    </TouchableOpacity>
+                    </MotionPressable>
                 </View>
             </View>
         );
@@ -163,42 +141,15 @@ export function ProfileScreen() {
                 }
             >
                 {/* Header */}
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    style={[styles.header, { paddingTop: insets.top + 15 }]}
-                >
-                    <View style={styles.headerTopRow}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            {router.canGoBack() && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} style={styles.iconButton}>
-                                <ArrowLeft size={22} color="white" />
-                            </TouchableOpacity>}
-                            <Text style={styles.headerTitle}>Профиль</Text>
-                        </View>
-                        <View style={styles.headerButtons}>
-                            {(profile.id === userId || userRole === "Admin") && (
-                                <TouchableOpacity
-                                    style={styles.iconButton}
-                                    onPress={() => router.push({pathname: '/(screens)/UsersScreen/CreateUserScreen', params: { id: profile.id}})}
-                                >
-                                    <View pointerEvents={"none"}>
-                                        <Edit size={20} color="white" />
-                                    </View>
-                                </TouchableOpacity>
-                            )}
-                            {!id && (
-                                <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
-                                    <View pointerEvents={"none"}>
-                                        <LogOut size={20} color="white" />
-                                    </View>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                </LinearGradient>
+                <ScreenHeader title="Профиль" overlap={false} onBack={router.canGoBack() ? () => router.back() : undefined}
+                    actions={<>
+                        {(profile.id === userId || userRole === 'Admin') && <Button iconName="Edit" label="Редактировать профиль" onClick={() => router.push({ pathname: '/(screens)/UsersScreen/CreateUserScreen', params: { id: profile.id } })} />}
+                        {!id && <Button danger iconName="LogOut" label="Выйти из аккаунта" onClick={handleLogout} />}
+                    </>} />
 
                 <View style={styles.content}>
                     {/* Profile Card */}
-                    <View style={[styles.card, { backgroundColor: colors.card }]}>
+                    <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.avatarContainer}>
                             <View style={[styles.avatarBase, { backgroundColor: colors.primary }]}>
                                 <Text style={styles.avatarText}>
@@ -242,13 +193,13 @@ export function ProfileScreen() {
                                 </View>
                             </View>
                         </View>
-                    </View>
+                    </Reveal>
 
                     {/* Секция: Подразделение (Департамент) */}
                     {profile.department && profile.department?.name !== "unknown"  && (
                         <>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Подразделение</Text>
-                            <TouchableOpacity
+                            <MotionPressable
                                 style={[styles.card, styles.departmentCard, { backgroundColor: colors.card }]}
                                 onPress={() => router.push({
                                     pathname: '/(screens)/DepartmentsScreen/DepartmentDetailsScreen',
@@ -267,15 +218,15 @@ export function ProfileScreen() {
                                     </Text>
                                 </View>
                                 <ChevronRight size={20} color={colors.subtext} />
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </>
                     )}
 
                     {/* Быстрые действия */}
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Активность</Text>
 
-                    <View style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.card }]}>
-                        <TouchableOpacity
+                    <Reveal style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: colors.card }]}>
+                        <MotionPressable
                             style={styles.actionItem}
                             onPress={() => router.push({pathname: '/EventsScreen', params: {isMine: "true"}})}
                         >
@@ -294,9 +245,9 @@ export function ProfileScreen() {
                                 </Text>
                             </View>
                             <ChevronRight size={20} color={colors.subtext} />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
-                        <TouchableOpacity
+                        <MotionPressable
                             style={styles.actionItem}
                             onPress={() => router.push({pathname: '/TaskBoardScreen', params: {isMine: "true"}})}
                         >
@@ -315,14 +266,14 @@ export function ProfileScreen() {
                                 </Text>
                             </View>
                             <ChevronRight size={20} color={colors.subtext} />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
-                    </View>
+                    </Reveal>
                     {!id && <>
                         <Text style={[styles.sectionTitle, {color: colors.text}]}>Настройки</Text>
-                        <View style={[styles.card, {padding: 0, overflow: 'hidden', backgroundColor: colors.card}]}>
+                        <Reveal style={[styles.card, {padding: 0, overflow: 'hidden', backgroundColor: colors.card}]}>
                     {/* Кнопка переключения темы */}
-                    <TouchableOpacity
+                    <MotionPressable
                         style={styles.actionItem}
                         onPress={() => setThemeSheetVisible(true)}
                     >
@@ -344,8 +295,8 @@ export function ProfileScreen() {
                             </Text>
                         </View>
                         <ChevronRight size={20} color={colors.subtext}/>
-                    </TouchableOpacity>
-                </View>
+                    </MotionPressable>
+                </Reveal>
                     </>}
                 </View>
             </ScrollView>
@@ -356,7 +307,7 @@ export function ProfileScreen() {
                 heightFraction={0.42}
                 scrollEnabled={false}
             >
-                <TouchableOpacity
+                <MotionPressable
                     style={[
                         styles.themeOption,
                         { borderBottomColor: colors.border },
@@ -377,9 +328,9 @@ export function ProfileScreen() {
                             </Text>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </MotionPressable>
 
-                <TouchableOpacity
+                <MotionPressable
                     style={[
                         styles.themeOption,
                         { borderBottomColor: colors.border },
@@ -400,9 +351,9 @@ export function ProfileScreen() {
                             </Text>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </MotionPressable>
 
-                <TouchableOpacity
+                <MotionPressable
                     style={[
                         styles.themeOption,
                         mode === 'dark' && [styles.themeOptionActive, { backgroundColor: colors.iconBox }]
@@ -422,7 +373,7 @@ export function ProfileScreen() {
                             </Text>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </MotionPressable>
             </BottomSheetModal>
         </View>
     );
@@ -496,7 +447,7 @@ const styles = StyleSheet.create({
     // Content wrapper
     content: {
         paddingHorizontal: 16,
-        marginTop: -55,
+        marginTop: 0,
         paddingBottom: 30,
     },
 
@@ -516,7 +467,7 @@ const styles = StyleSheet.create({
     // Profile specifics
     avatarContainer: {
         alignItems: 'center',
-        marginTop: -40, // Поднимаем аватар над карточкой
+        marginTop: 0, // Поднимаем аватар над карточкой
         marginBottom: 12,
     },
     avatarBase: {

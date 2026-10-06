@@ -1,22 +1,10 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
 import { CatalogItem } from '@/api/catalogService';
 import { Document } from '@/api/documentService';
 import { SkeletonLoader } from '@/components/ui/Shared/SkeletonLoader';
-import { LinearGradient } from "expo-linear-gradient";
-import {
-    AlertCircle,
-    ArrowLeft,
-    Folder,
-    FolderPlus,
-    Home,
-    Search,
-    Upload
-} from 'lucide-react-native';
-import {
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-    RefreshControl} from 'react-native';
+import { AlertCircle, Folder, Home, Search } from 'lucide-react-native';
+import { ScrollView, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CatalogCard } from './CatalogCard';
 import { DocumentCard } from './DocumentCard';
@@ -24,8 +12,8 @@ import { DocumentDetailModal } from './DocumentDetailModal';
 import { useFileManagerPresenter } from './FileManagerPresenter';
 import { styles } from './file-manager-screen';
 import { CreateCatalogModal } from './CreateCatalogModal';
-import {AuthManager} from "@/api/auth";
-import {useMemo, useState, useEffect} from "react";
+import { AuthManager } from "@/api/auth";
+import { useMemo, useState, useEffect } from "react";
 import { UploadingDocumentCard } from './UploadingDocumentCard';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -50,7 +38,7 @@ export function FileManager() {
             return userRole === "Admin";
         }
         return true;
-    }, [state.currentCatalog, userRole]);
+    }, [state.currentCatalog, userRole, state.breadcrumbPath]);
 
     const showUploadButton = useMemo(() => {
         if (!state.currentCatalog) return false;
@@ -73,50 +61,13 @@ export function FileManager() {
     return (
         <View style={[styles.container, {paddingBottom: insets.bottom + 50, backgroundColor: colors.background}]}>
             {/* Header */}
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, {paddingTop: insets.top + 15}]}>
-
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Документы</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {state.currentCatalog ? state.currentCatalogLabel : 'Выберите каталог'}
-                    </Text>
-                </View>
-                <View style={styles.headerButtonsContainer}>
-                    {state.currentCatalog && <TouchableOpacity
-                        style={styles.headerButton}
-                        onPress={handlers.handleGoBack}
-                        accessibilityRole="button"
-                        accessibilityLabel="Назад к предыдущему каталогу"
-                    >
-                        <ArrowLeft size={24} color="#ffffff" />
-                    </TouchableOpacity>}
-                    {showCreateCatalogButton && (
-                        <TouchableOpacity
-                            style={styles.headerButton}
-                            onPress={handlers.handleOpenCreateModal}
-                        >
-                            <View pointerEvents="none">
-                            <FolderPlus size={24} color="#ffffff" />
-                            </View>
-                        </TouchableOpacity>
-                    )}
-
-                    {showUploadButton && (
-                        <TouchableOpacity
-                            style={styles.headerButton}
-                            onPress={handlers.handleUploadFile}
-                        >
-                            <View pointerEvents="none">
-                            <Upload size={20} color="#ffffff" />
-                            </View>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </LinearGradient>
+            <ScreenHeader title="Документы" icon={Folder}
+                subtitle={state.currentCatalog ? state.currentCatalogLabel : 'Выберите каталог'} overlap={false}
+                onBack={state.currentCatalog ? handlers.handleGoBack : undefined}
+                actions={<>
+                    {showCreateCatalogButton && <Button solid iconName="FolderPlus" label="Создать каталог" onClick={handlers.handleOpenCreateModal} />}
+                    {showUploadButton && <Button solid iconName="Upload" label="Загрузить документ" onClick={handlers.handleUploadFile} />}
+                </>} />
 
             {/* Breadcrumb */}
             {state.currentCatalog && (

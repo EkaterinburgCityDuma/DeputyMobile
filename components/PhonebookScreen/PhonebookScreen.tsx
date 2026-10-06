@@ -1,4 +1,4 @@
-import { LinearGradient } from "expo-linear-gradient";
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
 import {
     StyleSheet,
     Text,
@@ -12,9 +12,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Search } from "@/components/ui/Shared/Search";
 import {ContactCard} from "@/components/PhonebookScreen/ContactCard";
-import { Button } from "../ui/Shared/Button";
 import {declOfNum} from "@/utils";
 import { useTheme } from '@/context/ThemeContext';
+
+import { usePhonebookStore } from "@/store/usePhonebookStore";
 
 export interface PhonebookModel {
     full_name: string;
@@ -23,8 +24,6 @@ export interface PhonebookModel {
     internal_phone: string;
     office_number: string;
 }
-
-import { usePhonebookStore } from "@/store/usePhonebookStore";
 
 export const PhonebookScreen = () => {
     const { colors, isDark } = useTheme();
@@ -64,19 +63,8 @@ export const PhonebookScreen = () => {
         <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 50 }}>
             <StatusBar barStyle="light-content" translucent />
 
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 15 }]}
-            >
-                <Button onClick={() => navigation.goBack()} iconName={"ArrowLeft"}/>
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Телефонная книга</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {loading ? 'Загрузка...' : `${phonebookData.length} ${declOfNum(phonebookData.length, ['контакт', 'контакта', 'контактов'])}`}
-                    </Text>
-                </View>
-            </LinearGradient>
+            <ScreenHeader title="Телефонная книга" onBack={() => navigation.goBack()}
+                subtitle={loading ? 'Загрузка…' : `${filteredData.length} ${declOfNum(filteredData.length, ['контакт', 'контакта', 'контактов'])}`} />
             <Search
                 placeholder="Имя, должность или номер"
                 searchQuery={searchQuery}

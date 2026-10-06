@@ -1,31 +1,22 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    ActivityIndicator,
-    StatusBar,
-    RefreshControl,
-    Alert, Platform,
-    ScrollView
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, StatusBar, RefreshControl, Alert, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {apiClient} from "@/api/api";
+import { apiClient } from "@/api/api";
 import { Department } from "@/models/DepartmentModel";
 import Toast from "react-native-toast-message";
-import {Building2, Plus, Trash2} from "lucide-react-native";
-import {CreateDepartmentPopup} from "@/components/Departments/CreateDepartmentPopup";
+import { Building2, Trash2 } from "lucide-react-native";
+import { CreateDepartmentPopup } from "@/components/Departments/CreateDepartmentPopup";
 import { declOfNum } from '@/utils';
-import {Search} from "@/components/ui/Shared/Search";
+import { Search } from "@/components/ui/Shared/Search";
 import { useTheme } from '@/context/ThemeContext';
 
 import { useDepartmentsStore } from '@/store/useDepartmentsStore';
-import {SkeletonLoader} from "@/components/ui/Shared/SkeletonLoader";
+import { SkeletonLoader } from "@/components/ui/Shared/SkeletonLoader";
 
 const DepartmentsListScreen = () => {
     const { colors, isDark } = useTheme();
@@ -123,15 +114,15 @@ const DepartmentsListScreen = () => {
     };
 
     const renderDepartmentItem = ({ item }: { item: Department }) => (
-        <TouchableOpacity
+        <Reveal><MotionPressable
             style={[styles.departmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => router.push({
                 pathname: '/(screens)/DepartmentsScreen/DepartmentDetailsScreen',
                 params: { id: item.id, name: item.name }
             })}
         >
-            <View style={[styles.departmentIcon, { backgroundColor: isDark ? colors.primary + '20' : '#ebfdeb' }]}>
-                <Building2 size={22} color={isDark ? colors.roleText : "#2A6E3F"} />
+            <View style={[styles.departmentIcon, { backgroundColor: colors.roleBadge }]}>
+                <Building2 size={22} color={colors.roleText} />
             </View>
 
             <View style={styles.departmentInfo}>
@@ -139,41 +130,24 @@ const DepartmentsListScreen = () => {
                 <Text style={[styles.departmentId, { color: colors.subtext }]}>ID: {item.id.slice(0, 8)}...</Text>
             </View>
 
-            <TouchableOpacity
-                onPress={() => deleteDepartment(item.id, item.name)}
+            <MotionPressable
+                accessibilityLabel="Удалить отдел" onPress={event => { event.stopPropagation(); deleteDepartment(item.id, item.name); }}
                 style={styles.deleteButton}
             >
                 <View pointerEvents={"none"}>
                     <Trash2 size={16} color={isDark ? colors.subtext : "#000"} />
                 </View>
-            </TouchableOpacity>
-        </TouchableOpacity>
+            </MotionPressable>
+        </MotionPressable></Reveal>
     );
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 50 }}>
             <StatusBar barStyle="light-content" translucent />
 
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 15 }]}
-            >
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Отделы</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {loading ? 'Загрузка...' : `${filteredDepartments.length} ${declOfNum(filteredDepartments.length, ['отдел', 'отдела', 'отделов'])}`}
-                    </Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.newTaskButton}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <View pointerEvents={"none"}>
-                        <Plus size={20} color="white" />
-                    </View>
-                </TouchableOpacity>
-            </LinearGradient>
+            <ScreenHeader title="Отделы" icon={Building2}
+                subtitle={loading ? 'Загрузка…' : `${filteredDepartments.length} ${declOfNum(filteredDepartments.length, ['отдел', 'отдела', 'отделов'])}`}
+                actions={<Button solid iconName="Plus" label="Создать отдел" onClick={() => setModalVisible(true)} />} />
             <Search
                 placeholder={"Название отдела"}
                 searchQuery={searchQuery}
@@ -245,8 +219,8 @@ const styles = StyleSheet.create({
         marginTop: 1,
     },
     newTaskButton: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         borderRadius: 20,
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         justifyContent: 'center',
@@ -258,15 +232,15 @@ const styles = StyleSheet.create({
     departmentCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 16,
+        padding: 16,
+        borderRadius: 18,
         marginBottom: 12,
         borderWidth: 1,
     },
     departmentIcon: {
         width: 40,
         height: 40,
-        borderRadius: 25,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,

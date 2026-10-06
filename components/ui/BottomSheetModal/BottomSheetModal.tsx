@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -7,15 +7,16 @@ import {
     Modal,
     Animated,
     PanResponder,
-    Dimensions,
+    useWindowDimensions,
     ScrollView,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { X } from 'lucide-react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { MotionPressable } from '../Shared/Motion';
 
 interface BottomSheetModalProps {
     /** Видимость модалки */
@@ -64,38 +65,43 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                                                                       sheetStyle,
                                                                       contentContainerStyle,
                                                                   }) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
+    const { height, width } = useWindowDimensions();
+    const reducedMotion = useReducedMotion();
     const insets = useSafeAreaInsets();
-    const sheetHeight = SCREEN_HEIGHT * heightFraction;
+    const sheetHeight = Math.min(height * heightFraction, 800);
     const panY = useRef(new Animated.Value(sheetHeight)).current;
+    const closing = useRef(false);
 
     const open = useCallback(() => {
         Animated.timing(panY, {
             toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
+            duration: reducedMotion ? 0 : 260,
+            useNativeDriver: Platform.OS !== 'web',
         }).start();
-    }, [panY]);
+    }, [panY, reducedMotion]);
 
     const close = useCallback(
         (callback?: () => void) => {
+            if (closing.current) return;
+            closing.current = true;
             Animated.timing(panY, {
                 toValue: sheetHeight,
-                duration: 250,
-                useNativeDriver: true,
-            }).start(() => {
-                callback?.();
+                duration: reducedMotion ? 0 : 200,
+                useNativeDriver: Platform.OS !== 'web',
+            }).start(({ finished }) => {
+                if (finished) callback?.();
+                closing.current = false;
             });
         },
-        [panY, sheetHeight],
+        [panY, sheetHeight, reducedMotion],
     );
 
     const handleClose = useCallback(() => {
         close(onClose);
     }, [close, onClose]);
 
-    const panResponder = useRef(
-        PanResponder.create({
+    const panResponder = useMemo(() => PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5,
             onPanResponderMove: (_, gs) => {
@@ -109,19 +115,16 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                 } else {
                     Animated.timing(panY, {
                         toValue: 0,
-                        duration: 200,
-                        useNativeDriver: true,
+                        duration: reducedMotion ? 0 : 180,
+                        useNativeDriver: Platform.OS !== 'web',
                     }).start();
                 }
             },
-        }),
-    ).current;
-
-    // Пересоздаём panResponder при изменении startY / swipeThreshold
-    // (для простоты — достаточно, если они не меняются динамически)
+        }), [panY, swipeThreshold, close, onClose, reducedMotion]);
 
     useEffect(() => {
         if (visible) {
+            closing.current = false;
             open();
         } else {
             panY.setValue(sheetHeight);
@@ -130,15 +133,20 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
 
     const renderDefaultHeader = () => (
         <View style={styles.headerContainer}>
-            {title ? <Text style={[styles.title, { color: colors.text }]}>{title}</Text> : null}
+            {title ? <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>{title}</Text> : <View style={{ flex: 1 }} />}
+            <MotionPressable onPress={handleClose} accessibilityLabel="Закрыть окно" style={[styles.closeButton, { backgroundColor: colors.iconBox }]}>
+                <X size={20} color={colors.subtext} />
+            </MotionPressable>
         </View>
     );
 
     const content = (
         <>
             {/* Drag-зона */}
-            <View {...panResponder.panHandlers} style={styles.dragArea}>
-                <View style={[styles.dragIndicator, { backgroundColor: colors.border }]} />
+            <View style={styles.dragArea}>
+                <View {...panResponder.panHandlers} style={styles.dragHandle}>
+                    <View style={[styles.dragIndicator, { backgroundColor: colors.border }]} />
+                </View>
                 {renderHeader ? renderHeader() : renderDefaultHeader()}
             </View>
 
@@ -150,7 +158,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={[
                         styles.scrollContent,
-                        { paddingBottom: insets.bottom + 24 + (renderFooter ? 80 : 0) },
+                        { paddingBottom: renderFooter ? 20 : insets.bottom + 24 },
                         contentContainerStyle,
                     ]}
                 >
@@ -186,19 +194,19 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         >
             <View style={styles.overlay}>
                 {/* Тап по затемнению — закрыть */}
-                <TouchableOpacity
-                    style={styles.dismiss}
-                    activeOpacity={1}
-                    onPress={handleClose}
-                />
+                <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8,20,13,0.48)', opacity: panY.interpolate({ inputRange: [0, sheetHeight], outputRange: [1, 0], extrapolate: 'clamp' }) }]}>
+                    <TouchableOpacity activeOpacity={1} style={styles.dismiss} onPress={handleClose} accessibilityLabel="Закрыть окно" />
+                </Animated.View>
 
                 <Animated.View
                     style={[
                         styles.sheet,
                         {
                             transform: [{ translateY: panY }],
-                            height: SCREEN_HEIGHT * heightFraction,
+                            height: sheetHeight,
                             backgroundColor: colors.card,
+                            borderColor: colors.border,
+                            ...(width >= 720 ? { bottom: 16, borderRadius: 24 } : {}),
                         },
                         sheetStyle,
                     ]}
@@ -223,7 +231,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        alignItems: 'center',
     },
     dismiss: {
         flex: 1,
@@ -231,12 +239,13 @@ const styles = StyleSheet.create({
     sheet: {
         position: 'absolute',
         bottom: 0,
-        left: 0,
-        right: 0,
+        width: '100%',
+        maxWidth: 640,
         backgroundColor: '#ffffff',
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         paddingHorizontal: 20,
+        borderWidth: StyleSheet.hairlineWidth,
         elevation: 25,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -10 },
@@ -244,7 +253,6 @@ const styles = StyleSheet.create({
         shadowRadius: 15,
     },
     dragArea: {
-        paddingTop: 12,
         paddingBottom: 4,
         width: '100%',
         alignItems: 'center',
@@ -254,17 +262,23 @@ const styles = StyleSheet.create({
         height: 5,
         backgroundColor: '#E2E8F0',
         borderRadius: 2.5,
-        marginBottom: 16,
     },
     headerContainer: {
-        marginBottom: 10,
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
     },
     title: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '700',
         color: '#0b2340',
-        textAlign: 'center',
+        flex: 1,
+        letterSpacing: -0.4,
     },
+    dragHandle: { height: 28, width: '100%', alignItems: 'center', justifyContent: 'center' },
+    closeButton: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     scrollView: {
         flex: 1,
     },

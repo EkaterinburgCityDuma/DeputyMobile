@@ -103,14 +103,13 @@ export const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     listContent: {
-        paddingBottom: 125,
+        padding: 16, paddingBottom: 125,
 
     },
     notificationItem: {
         paddingVertical: 16,
         paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderWidth: 1, borderRadius: 18, marginBottom: 12,
     },
     row: {
         flexDirection: 'row',
@@ -120,7 +119,7 @@ export const styles = StyleSheet.create({
     iconWrapper: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 12,
         backgroundColor: '#E6F4EA', // мягкий зелёный фон
         alignItems: 'center',
         justifyContent: 'center',

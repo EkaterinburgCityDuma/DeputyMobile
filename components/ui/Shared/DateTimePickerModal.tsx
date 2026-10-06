@@ -3,7 +3,6 @@ import {
     View,
     Text,
     Modal,
-    TouchableOpacity,
     StyleSheet,
     ScrollView,
 } from 'react-native';
@@ -12,6 +11,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { MotionPressable } from './Motion';
+import { useReducedMotion } from 'react-native-reanimated';
 
 // Настройка dayjs на русский
 dayjs.locale('ru');
@@ -32,6 +33,7 @@ export default function DateTimePickerModal({
                                                 date,
                                             }: DateTimePickerModalProps) {
     const { colors } = useTheme();
+    const reducedMotion = useReducedMotion();
     const styles = createStyles(colors);
     const [selectedDate, setSelectedDate] = useState<Date>(date || new Date());
     const [pickerMode, setPickerMode] = useState<'date' | 'time'>(mode === 'time' ? 'time' : 'date');
@@ -63,16 +65,16 @@ export default function DateTimePickerModal({
             const timeout = setTimeout(() => {
                 hoursScrollRef.current?.scrollTo({
                     y: selectedHours * 44,
-                    animated: true
+                    animated: !reducedMotion
                 });
                 minutesScrollRef.current?.scrollTo({
                     y: (selectedMinutes / 5) * 44,
-                    animated: true
+                    animated: !reducedMotion
                 });
             }, 100);
             return () => clearTimeout(timeout);
         }
-    }, [pickerMode, isVisible, selectedHours, selectedMinutes]);
+    }, [pickerMode, isVisible, selectedHours, selectedMinutes, reducedMotion]);
 
     const handleConfirm = () => {
         const finalDate = new Date(selectedDate);
@@ -100,16 +102,16 @@ export default function DateTimePickerModal({
         <Modal
             visible={isVisible}
             transparent
-            animationType="fade"
+            animationType={reducedMotion ? 'none' : 'fade'}
             onRequestClose={onCancel}
         >
             <View style={styles.overlay}>
                 <View style={styles.container}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={onCancel} style={styles.headerButton}>
+                        <MotionPressable onPress={onCancel} style={styles.headerButton}>
                             <Ionicons name="close" size={24} color={colors.subtext} />
-                        </TouchableOpacity>
+                        </MotionPressable>
                         <Text style={styles.title}>
                             {pickerMode === 'date' ? 'Выберите дату' : 'Выберите время'}
                         </Text>
@@ -119,7 +121,7 @@ export default function DateTimePickerModal({
                     {/* Mode Tabs для datetime */}
                     {mode === 'datetime' && (
                         <View style={styles.tabContainer}>
-                            <TouchableOpacity
+                            <MotionPressable
                                 style={[styles.tab, pickerMode === 'date' && styles.tabActive]}
                                 onPress={() => setPickerMode('date')}
                             >
@@ -131,8 +133,8 @@ export default function DateTimePickerModal({
                                 <Text style={[styles.tabText, pickerMode === 'date' && styles.tabTextActive]}>
                                     Дата
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </MotionPressable>
+                            <MotionPressable
                                 style={[styles.tab, pickerMode === 'time' && styles.tabActive]}
                                 onPress={() => setPickerMode('time')}
                             >
@@ -144,7 +146,7 @@ export default function DateTimePickerModal({
                                 <Text style={[styles.tabText, pickerMode === 'time' && styles.tabTextActive]}>
                                     Время
                                 </Text>
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
                     )}
 
@@ -201,7 +203,7 @@ export default function DateTimePickerModal({
                                                 {/* Padding top для центрирования */}
                                                 <View style={{ height: 80 }} />
                                                 {hours.map((hour) => (
-                                                    <TouchableOpacity
+                                                    <MotionPressable
                                                         key={hour}
                                                         style={[
                                                             styles.timeItem,
@@ -215,7 +217,7 @@ export default function DateTimePickerModal({
                                                         ]}>
                                                             {formatTime(hour)}
                                                         </Text>
-                                                    </TouchableOpacity>
+                                                    </MotionPressable>
                                                 ))}
                                                 {/* Padding bottom для центрирования */}
                                                 <View style={{ height: 80 }} />
@@ -241,7 +243,7 @@ export default function DateTimePickerModal({
                                             >
                                                 <View style={{ height: 80 }} />
                                                 {minutes.map((minute) => (
-                                                    <TouchableOpacity
+                                                    <MotionPressable
                                                         key={minute}
                                                         style={[
                                                             styles.timeItem,
@@ -255,7 +257,7 @@ export default function DateTimePickerModal({
                                                         ]}>
                                                             {formatTime(minute)}
                                                         </Text>
-                                                    </TouchableOpacity>
+                                                    </MotionPressable>
                                                 ))}
                                                 <View style={{ height: 80 }} />
                                             </ScrollView>
@@ -280,18 +282,18 @@ export default function DateTimePickerModal({
 
                     {/* Footer */}
                     <View style={styles.footer}>
-                        <TouchableOpacity
+                        <MotionPressable
                             style={styles.cancelButton}
                             onPress={onCancel}
                         >
                             <Text style={styles.cancelButtonText}>Отмена</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </MotionPressable>
+                        <MotionPressable
                             style={styles.confirmButton}
                             onPress={handleConfirm}
                         >
                             <Text style={styles.confirmButtonText}>Готово</Text>
-                        </TouchableOpacity>
+                        </MotionPressable>
                     </View>
                 </View>
             </View>

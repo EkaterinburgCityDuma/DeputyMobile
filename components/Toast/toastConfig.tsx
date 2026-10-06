@@ -1,11 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { ToastConfig } from 'react-native-toast-message';
 import { CheckCircle2, Info, XCircle, Calendar, Bell } from "lucide-react-native";
 import { useTheme } from '@/context/ThemeContext';
 
-const { width } = Dimensions.get('window');
-const TOAST_WIDTH = Platform.OS === 'web' ? 360 : Math.min(width * 0.92, 420);
 
 const ToastLayout = ({
     text1,
@@ -18,11 +16,8 @@ const ToastLayout = ({
     type: 'success' | 'error' | 'info' | 'notification';
     icon?: any;
 }) => {
-    const { isDark } = useTheme();
-
-    // Цвета без прозрачности
-    const beige = '#F7F2E9'; // Современный бежевый
-    const darkGray = '#2D2D2D'; // Солидный серый
+    const { isDark, colors } = useTheme();
+    const { width } = useWindowDimensions();
 
     let Icon = Info;
     let color = isDark ? '#60a5fa' : '#3b82f6';
@@ -45,13 +40,14 @@ const ToastLayout = ({
     if (CustomIcon) Icon = CustomIcon;
 
     return (
-        <View style={styles.outerContainer}>
+        <View style={styles.outerContainer} accessibilityLiveRegion="polite">
             <View
                 style={[
                     styles.container,
                     {
-                        backgroundColor: isDark ? darkGray : beige,
-                        borderColor: isDark ? '#404040' : '#E5E0D5',
+                        width: Math.min(width - 32, 420),
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
                     }
                 ]}
             >
@@ -62,7 +58,7 @@ const ToastLayout = ({
                     <View style={styles.textContainer}>
                         {text1 && (
                             <Text
-                                style={[styles.text1, { color: isDark ? '#FFFFFF' : '#2D2D2D' }]}
+                                style={[styles.text1, { color: colors.text }]}
                                 numberOfLines={1}
                             >
                                 {text1}
@@ -70,7 +66,7 @@ const ToastLayout = ({
                         )}
                         {text2 && (
                             <Text
-                                style={[styles.text2, { color: isDark ? '#A0A0A0' : '#6B6B6B' }]}
+                                style={[styles.text2, { color: colors.subtext }]}
                                 numberOfLines={2}
                             >
                                 {text2}
@@ -107,10 +103,9 @@ const styles = StyleSheet.create({
 
     },
     container: {
-        width: TOAST_WIDTH,
-        borderRadius: 20,
+        borderRadius: 16,
         overflow: 'hidden',
-        borderWidth: 1.5,
+        borderWidth: 1,
 
         // Тень
         shadowColor: "#000",
@@ -124,8 +119,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flexDirection: 'row',
-        paddingVertical: 8,
-        paddingHorizontal: 8,
+        padding: 12,
         alignItems: 'center',
     },
     iconContainer: {

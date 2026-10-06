@@ -1,26 +1,18 @@
-import React, {useState, useEffect, useMemo, useCallback} from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    FlatList,
-} from 'react-native';
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {
-    ArrowLeft,
-    Bell,
-    Calendar, ChevronRight,
-    ClipboardList,
-} from 'lucide-react-native';
+import { Bell, Calendar, ChevronRight, ClipboardList } from 'lucide-react-native';
 import { styles } from './notifications-page';
 import { router } from 'expo-router';
-import { LinearGradient } from "expo-linear-gradient";
 import { Select } from "@/components/ui/Shared/Select";
-import {Notification, NotificationType} from "@/models/NotificationModel";
-import {useSafeAreaInsets} from "react-native-safe-area-context";
-import {NotificationSkeletonItem} from "@/components/NotificationsPage/NotificationSkeletonItem";
+import { Notification, NotificationType } from "@/models/NotificationModel";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NotificationSkeletonItem } from "@/components/NotificationsPage/NotificationSkeletonItem";
 import { Filters } from '../ui/Shared/Filters';
-import {apiClient} from "@/api/api";
+import { apiClient } from "@/api/api";
 import { useTheme } from '@/context/ThemeContext';
 
 const notificationConfig: Record<NotificationType, { icon: any; iconColor: string }> = {
@@ -123,17 +115,17 @@ export function Notifications() {
         const Icon = config.icon;
 
         return (
-            <TouchableOpacity
+            <Reveal><MotionPressable
                 onPress={() => handleNotificationClick(item)}
                 style={[
                     styles.notificationItem,
-                    { backgroundColor: colors.card, borderBottomColor: colors.divider }
+                    { backgroundColor: colors.card, borderColor: colors.border, borderBottomColor: colors.border }
                 ]}
             >
                 <View style={styles.row}>
 
                     {/* Иконка */}
-                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.primary + '20' : '#ebfdeb' }]}>
+                    <View style={[styles.iconWrapper, { backgroundColor: colors.roleBadge }]}>
                         <Icon size={20} color={isDark ? colors.roleText : "#268356"} />
                     </View>
 
@@ -163,7 +155,7 @@ export function Notifications() {
                     {/* Стрелка */}
                     <ChevronRight size={18} color={colors.subtext} />
                 </View>
-            </TouchableOpacity>
+            </MotionPressable></Reveal>
         );
     };
 
@@ -184,9 +176,9 @@ export function Notifications() {
     const renderError = () => (
         <View style={styles.errorContainer}>
             <Text style={[styles.errorText, { color: isDark ? '#f87171' : '#ef4444' }]}>{error}</Text>
-            <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={fetchNotifications}>
+            <MotionPressable style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={fetchNotifications}>
                 <Text style={styles.retryButtonText}>Повторить</Text>
-            </TouchableOpacity>
+            </MotionPressable>
         </View>
     );
 
@@ -203,23 +195,7 @@ export function Notifications() {
     if (loading) {
         return (
             <View style={[styles.container, {paddingBottom: insets.bottom + 15, backgroundColor: colors.background}]}>
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.header, {paddingTop: insets.top + 15}]}
-                >
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                            <View pointerEvents="none">
-                                <ArrowLeft size={24} color="white" />
-                            </View>
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleContainer}>
-                            <Text style={styles.headerTitle}>Уведомления</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
+                <ScreenHeader title="Уведомления" onBack={() => navigation.goBack()} />
 
                 <Filters
                     title1={'Фильтр'}
@@ -235,23 +211,7 @@ export function Notifications() {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, {paddingTop: insets.top + 15}]}
-            >
-                <View style={styles.headerContent}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <View pointerEvents="none">
-                            <ArrowLeft size={24} color="white" />
-                        </View>
-                    </TouchableOpacity>
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Уведомления</Text>
-                    </View>
-                </View>
-            </LinearGradient>
+            <ScreenHeader title="Уведомления" onBack={() => navigation.goBack()} />
 
             <Filters
             title1={'Фильтр'}

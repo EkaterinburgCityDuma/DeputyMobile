@@ -1,17 +1,18 @@
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import { CatalogItem } from '@/api/catalogService';
 import { Document } from "@/api/documentService"
-import { Info } from 'lucide-react-native';
-import { Text, TouchableOpacity, View, Image, Platform } from 'react-native';
+import { Info , CheckCircle2 } from 'lucide-react-native';
+import { Text, View, Image, Platform } from 'react-native';
 import { styles } from './file-manager-screen';
 import { JSX, useState, useEffect } from 'react';
 import { apiUrl } from "@/api/api";
-import {xAppSecret} from "@/api/auth";
-import { AuthManager } from "@/api/auth";
+import {xAppSecret, AuthManager } from "@/api/auth";
+
 import {ImagePreviewModal} from "@/components/EventsScreen/ImagePreviewModal";
 import { useTheme } from '@/context/ThemeContext';
 
 import { useFileManagerStore } from '@/store/useFileManagerStore';
-import { CheckCircle2 } from 'lucide-react-native';
+
 
 interface DocumentCardProps {
     document: Document;
@@ -96,8 +97,8 @@ export function DocumentCard({ document, getFileIcon, getFileSize, onInfoPress, 
 
     return (
         <>
-            <View style={[styles.documentItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TouchableOpacity onPress={handleImagePress} style={styles.documentContent}>
+            <Reveal style={[styles.documentItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <MotionPressable accessibilityLabel={`Открыть ${document.file_name}`} onPress={handleImagePress} style={styles.documentContent}>
                     <View style={[styles.documentIconContainer, { backgroundColor: isDark ? colors.iconBox : '#F3F4F6' }]}>
                         {isImage && !imageError ? (
                             <Image
@@ -132,16 +133,16 @@ export function DocumentCard({ document, getFileIcon, getFileSize, onInfoPress, 
                         </View>
                     </View>
 
-                    <TouchableOpacity
+                    <MotionPressable
                         style={styles.documentActionButton}
-                        onPress={() => onInfoPress(document)}
+                        accessibilityLabel="Сведения о документе" onPress={event => { event.stopPropagation(); onInfoPress(document); }}
                     >
                         <View pointerEvents="none">
                             <Info size={18} color={colors.subtext} />
                         </View>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </View>
+                    </MotionPressable>
+                </MotionPressable>
+            </Reveal>
 
             <ImagePreviewModal
                 visible={previewVisible}

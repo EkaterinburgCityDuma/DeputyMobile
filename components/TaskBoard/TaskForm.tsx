@@ -1,25 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    StyleSheet,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Text, TextInput, View, StyleSheet } from 'react-native';
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { MotionPressable } from '@/components/ui/Shared/Motion';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerModal from "@/components/ui/Shared/DateTimePickerModal";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import {router, useLocalSearchParams} from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { taskService } from '@/api/taskService';
-import {formatDateForDisplay} from "@/utils";
-import {ArrowLeft} from "lucide-react-native";
+import { formatDateForDisplay } from "@/utils";
+
 import { useTheme } from '@/context/ThemeContext';
 
 
@@ -147,60 +137,47 @@ export function TaskForm() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 20 }]}
-            >
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <View pointerEvents="none">
-                        <ArrowLeft size={24} color="white" />
-                    </View>
-                </TouchableOpacity>
-                {/* Меняем заголовок в зависимости от режима */}
-                <Text style={styles.headerTitle}>
-                    {isEditMode ? 'Редактирование' : 'Новая задача'}
-                </Text>
-            </LinearGradient>
+            <ScreenHeader title={isEditMode ? 'Редактирование задачи' : 'Новая задача'} onBack={() => router.back()} overlap={false} />
             <ScrollView
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 110 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
 
 
                 <View style={styles.card}>
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Название *</Text>
                     <TextInput
-                        style={[styles.input, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]}
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         value={title}
                         onChangeText={setTitle}
-                        placeholder="Название *"
+                        accessibilityLabel="Название" placeholder="Название *"
                         placeholderTextColor={colors.subtext}
                     />
 
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Описание *</Text>
                     <TextInput
-                        style={[styles.input, styles.textArea, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]}
+                        style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         multiline
                         numberOfLines={8}
                         value={description}
                         onChangeText={setDescription}
-                        placeholder="Описание *"
+                        accessibilityLabel="Описание" placeholder="Описание *"
                         placeholderTextColor={colors.subtext}
                         textAlignVertical="top"
                     />
 
-                    <TouchableOpacity style={[styles.unifiedInput, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]} onPress={() => setDatePickerVisibility(true)}>
+                    <MotionPressable style={[styles.unifiedInput, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setDatePickerVisibility(true)}>
                         <Text style={[dueDate ? styles.inputText : styles.placeholderText, dueDate && { color: colors.text }]}>
                             {dueDate ? formatDateForDisplay(dueDate) : "Выберите срок исполнения *"}
                         </Text>
                         <Ionicons name="calendar-outline" size={20} color={colors.subtext} />
-                    </TouchableOpacity>
+                    </MotionPressable>
 
                     {/* Выбор приоритета */}
                     <View style={[styles.selectWrapper, { zIndex: 900 }]}>
-                        <TouchableOpacity
-                            style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => {
                                 setIsPrioritySelectOpen(!isPrioritySelectOpen);
                                 setIsStatusSelectOpen(false);
@@ -214,12 +191,12 @@ export function TaskForm() {
                                 size={20}
                                 color={colors.subtext}
                             />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
                         {isPrioritySelectOpen && (
                             <View style={[styles.selectDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                                 {PRIORITY_MAP.map((item) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         key={item.id}
                                         style={[
                                             styles.selectItem,
@@ -241,7 +218,7 @@ export function TaskForm() {
                                         {priority === item.id && (
                                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 ))}
                             </View>
                         )}
@@ -249,8 +226,8 @@ export function TaskForm() {
 
                     {/* Выбор статуса */}
                     <View style={[styles.selectWrapper, { zIndex: 800 }]}>
-                        <TouchableOpacity
-                            style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => {
                                 setIsStatusSelectOpen(!isStatusSelectOpen);
                                 setIsPrioritySelectOpen(false);
@@ -264,12 +241,12 @@ export function TaskForm() {
                                 size={20}
                                 color={colors.subtext}
                             />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
                         {isStatusSelectOpen && (
                             <View style={[styles.selectDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                                 {statuses.map((item) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         key={item.name}
                                         style={[
                                             styles.selectItem,
@@ -291,14 +268,14 @@ export function TaskForm() {
                                         {selectedStatus === item.name && (
                                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 ))}
                             </View>
                         )}
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.publishButton, { backgroundColor: colors.primary }, isSubmitting && styles.publishButtonDisabled]}
+                    <MotionPressable
+                        style={[styles.publishButton, { backgroundColor: colors.primary }, { backgroundColor: colors.primary }, isSubmitting && styles.publishButtonDisabled]}
                         onPress={handleSubmit}
                         disabled={isSubmitting}
                     >
@@ -309,7 +286,7 @@ export function TaskForm() {
                                 {isEditMode ? 'Сохранить' : 'Создать'}
                             </Text>
                         )}
-                    </TouchableOpacity>
+                    </MotionPressable>
                 </View>
             </ScrollView>
 
@@ -343,9 +320,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
         fontSize: 15,
         marginBottom: 14,
         marginTop: 8,
@@ -360,9 +337,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
         marginBottom: 14,
         marginTop: 8,
     },
@@ -382,9 +359,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 14, // Немного увеличил высоту кнопки
-        borderRadius: 10,
+        borderRadius: 12,
         marginTop: 25,
-        marginBottom: 155,
+        marginBottom: 32,
     },
     publishButtonDisabled: {
         backgroundColor: "#9ca3af",
@@ -407,9 +384,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
     },
     selectValue: {
         fontSize: 15,
@@ -424,7 +401,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#ddd',
-        borderRadius: 10,
+        borderRadius: 12,
         marginTop: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },

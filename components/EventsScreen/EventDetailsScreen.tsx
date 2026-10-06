@@ -1,14 +1,13 @@
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import React, { useCallback, useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Alert, Platform, Image, Share
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Alert, Platform, Image, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { AuthManager } from "@/api/auth";
-import { LinearGradient } from 'expo-linear-gradient';
+import { AuthManager, xAppSecret } from "@/api/auth";
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, FileText, Download, CheckCircle2, XCircle, HelpCircle, X, Edit, Trash2, Megaphone } from "lucide-react-native";
+import { FileText, Download, CheckCircle2, XCircle, HelpCircle } from "lucide-react-native";
 import { EventAttachmentUploader } from "@/components/EventsScreen/EventAttachmentUploader";
 import { EventAttendanceModal } from "@/components/EventsScreen/EventAttendanceModal";
 import { useFileManagerPresenter } from "@/components/FileManagerScreen/FileManagerPresenter";
@@ -17,11 +16,15 @@ import { AttendeeExcuseModal } from "@/components/EventsScreen/AttendeeExcuseMod
 import Toast from "react-native-toast-message";
 // @ts-ignore
 import { EventMap } from "@/components/ui/EventMap/EventMap";
-import {showLocation} from "react-native-map-link";
-import {apiClient, apiUrl} from '@/api/api';
-import {xAppSecret} from "@/api/auth";
-import {ImagePreviewModal} from "@/components/EventsScreen/ImagePreviewModal";
+import { showLocation } from "react-native-map-link";
+import { apiClient, apiUrl } from '@/api/api';
+
+import { ImagePreviewModal } from "@/components/EventsScreen/ImagePreviewModal";
 import { useTheme } from '@/context/ThemeContext';
+
+import { useFileManagerStore } from '@/store/useFileManagerStore';
+
+import { useEventDetailsStore } from "@/store/useEventDetailsStore";
 
 
 interface Attachment {
@@ -57,8 +60,6 @@ interface EventData {
     attendees: Attendee[];
 }
 
-import { useFileManagerStore } from '@/store/useFileManagerStore';
-
 interface AttachmentItemProps {
     file: Attachment;
     onImagePress: (file: Attachment) => void;
@@ -89,7 +90,7 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({ file, onImagePress }) =
     return (
         <View style={styles.attachmentContainer}>
             {isImage ? (
-                <TouchableOpacity
+                <MotionPressable
                     style={[styles.imagePreviewContainer, { backgroundColor: isDark ? colors.iconBox : '#f1f5f9' }]}
                     onPress={() => onImagePress(file)}
                 >
@@ -99,9 +100,9 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({ file, onImagePress }) =
                             {file.file_name}
                         </Text>
                     </View>
-                </TouchableOpacity>
+                </MotionPressable>
             ) : (
-                <TouchableOpacity
+                <MotionPressable
                     style={[styles.fileRow, { backgroundColor: isDark ? colors.iconBox : '#f8fafc' }, isDownloading && styles.fileRowDownloading]}
                     onPress={handleDownload}
                     disabled={isDownloading}
@@ -122,7 +123,7 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({ file, onImagePress }) =
                     ) : (
                         <Download size={20} color={colors.subtext} />
                     )}
-                </TouchableOpacity>
+                </MotionPressable>
             )}
 
             {isDownloading && (
@@ -177,8 +178,6 @@ const ImagePreviewThumbnail: React.FC<{ file: Attachment }> = ({ file }) => {
         />
     );
 };
-
-import { useEventDetailsStore } from "@/store/useEventDetailsStore";
 
 export const EventDetailsScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -501,9 +500,9 @@ export const EventDetailsScreen: React.FC = () => {
             <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
                 <Ionicons name="alert-circle-outline" size={64} color={isDark ? "#f87171" : "#dc2626"} />
                 <Text style={[styles.errorText, { color: colors.text }]}>Событие не найдено</Text>
-                <TouchableOpacity style={[styles.errorButton, { backgroundColor: colors.primary }]} onPress={handleBack}>
+                <MotionPressable style={[styles.errorButton, { backgroundColor: colors.primary }]} onPress={handleBack}>
                     <Text style={styles.errorButtonText}>Вернуться назад</Text>
-                </TouchableOpacity>
+                </MotionPressable>
             </View>
         );
     }
@@ -512,53 +511,21 @@ export const EventDetailsScreen: React.FC = () => {
         <>
             <ScrollView
                 style={[styles.container, { backgroundColor: colors.background }]}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    style={[styles.header, { paddingTop: insets.top + 15 }]}
-                >
-                    <View style={styles.headerTopRow}>
-                        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                            <View pointerEvents="none">
-                                <ArrowLeft size={24} color="white" />
-                            </View>
-                        </TouchableOpacity>
-
-                        <View style={styles.headerActions}>
-                            {/* Новая кнопка "Поделиться" (мегафон) */}
-                            <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
-                                <Megaphone size={20} color="white" />
-                            </TouchableOpacity>
-
-                            {(userRole === "Admin" || userId === event.author_id) && (
-                                <>
-                                    <TouchableOpacity
-                                        style={[styles.iconButton, { marginLeft: 10 }]}
-                                        onPress={() => router.push({ pathname: '/(screens)/EventsScreen/CreateEventScreen', params: { id: event.id, isEdit: 1 } })}
-                                    >
-                                        <Edit size={20} color="white" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.iconButton, { marginLeft: 10 }]} onPress={handleDelete}>
-                                        <Trash2 size={20} color="#fff" />
-                                    </TouchableOpacity>
-                                </>
-                            )}
-                        </View>
-                    </View>
-
-                    <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle} numberOfLines={3}>{event.title}</Text>
-                        <View style={[styles.statusTag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                            <Text style={[styles.statusTagText, { color: 'white' }]}>{getEventTypeLabel(event.type)}</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
+                <ScreenHeader stacked overlap={false} title={event.title} subtitle={getEventTypeLabel(event.type)} onBack={handleBack}
+                    actions={<>
+                        <Button iconName="Megaphone" label="Поделиться событием" onClick={handleShare} />
+                        {(userRole === 'Admin' || userId === event.author_id) && <>
+                            <Button iconName="Edit" label="Редактировать событие" onClick={() => router.push({ pathname: '/(screens)/EventsScreen/CreateEventScreen', params: { id: event.id, isEdit: 1 } })} />
+                            <Button danger iconName="Trash2" label="Удалить событие" onClick={handleDelete} />
+                        </>}
+                    </>} />
 
                 <View style={styles.content}>
-                    <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                    <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                         <View style={styles.timeRow}>
                             <View style={styles.timeContent}>
                                 <Text style={[styles.label, { color: colors.subtext }]}>Начало</Text>
@@ -570,29 +537,29 @@ export const EventDetailsScreen: React.FC = () => {
                                 <Text style={[styles.value, { color: colors.text }]}>{endDate.day}, {endDate.time}</Text>
                             </View>
                         </View>
-                    </View>
+                    </Reveal>
 
                     {!!location.address && (
-                        <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                        <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Место проведения</Text>
                             <Text style={[styles.addressText, { color: colors.subtext }]}>{location.address}</Text>
-                            {location.coordinates && <TouchableOpacity onPress={openMaps} activeOpacity={0.9}>
+                            {location.coordinates && <MotionPressable onPress={openMaps}>
                                 <View style={styles.mapContainer}>
                                     <EventMap key={event.location} coordinates={location.coordinates} />
                                 </View>
-                            </TouchableOpacity>}
-                        </View>
+                            </MotionPressable>}
+                        </Reveal>
                     )}
 
                     {event.description && (
-                        <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                        <Reveal style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>О событии</Text>
                             <Text style={[styles.description, { color: colors.subtext }]}>{event.description}</Text>
-                        </View>
+                        </Reveal>
                     )}
 
                     {event.attachments && event.attachments.length > 0 && (
-                        <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Материалы</Text>
                             {event.attachments.map((file) => (
                                 <AttachmentItem
@@ -605,10 +572,10 @@ export const EventDetailsScreen: React.FC = () => {
                     )}
 
                     {event.attendees && event.attendees.length > 0 && (
-                        <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+                        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: 0 }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Участники ({event.attendees.filter(attendee => attendee.status === 'Yes').length})</Text>
                             {event.attendees.map((attendee) => (
-                                <TouchableOpacity
+                                <MotionPressable
                                     key={attendee.user_id}
                                     style={[styles.attendeeRow, { borderBottomColor: colors.divider }]}
                                     onPress={() => {
@@ -632,7 +599,7 @@ export const EventDetailsScreen: React.FC = () => {
                                             </Text>
                                         </View>
                                     </View>
-                                </TouchableOpacity>
+                                </MotionPressable>
                             ))}
                         </View>
                     )}
@@ -648,16 +615,16 @@ export const EventDetailsScreen: React.FC = () => {
 
                     <View style={styles.actionGroup}>
                         { (userRole === "Admin" || userId === event.author_id ) &&
-                            <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setShowUploader(true)}>
+                            <MotionPressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setShowUploader(true)}>
                                 <FileText size={20} color={isDark ? colors.roleText : "#0f6319"} />
                                 <Text style={[styles.secondaryButtonText, { color: isDark ? colors.roleText : "#0f6319" }]}>Прикрепить файл</Text>
-                            </TouchableOpacity>
+                            </MotionPressable>
                         }
 
-                        <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setShowAttendanceModal(true)}>
+                        <MotionPressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setShowAttendanceModal(true)}>
                             <CheckCircle2 size={20} color={isDark ? colors.roleText : "#0f6319"} />
                             <Text style={[styles.secondaryButtonText, { color: isDark ? colors.roleText : "#0f6319" }]}>Отметить участие</Text>
-                        </TouchableOpacity>
+                        </MotionPressable>
                     </View>
 
                 </View>
@@ -714,8 +681,8 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 10 },
     statusTag: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
     statusTagText: { fontSize: 12, fontWeight: '600' },
-    content: { padding: 16, marginTop: -55 },
-    card: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+    content: { padding: 16, marginTop: 0 },
+    card: { borderWidth: 1, backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 0 },
     sectionTitle: { fontSize: 18, fontWeight: '600', color: '#1e293b', marginBottom: 12 },
     timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     timeContent: { flex: 1 },

@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import { Calendar, CircleDotDashed, Layers, Users } from "lucide-react-native";
 import { Task } from "@/models/TaskBoardModel";
 import { useTheme } from "@/context/ThemeContext";
@@ -7,6 +8,7 @@ import { useTheme } from "@/context/ThemeContext";
 interface TaskCardProps {
     task: Task;
     onPress: () => void;
+    index?: number;
 }
 
 const priorityConfig = {
@@ -17,7 +19,7 @@ const priorityConfig = {
     5: { label: 'Критический' }
 };
 
-export function TaskCard({ task, onPress }: TaskCardProps) {
+export function TaskCard({ task, onPress, index = 0 }: TaskCardProps) {
     const { colors, isDark } = useTheme();
     const expectedEndDate = new Date(task.expected_end_date);
     const isOverdue = new Date() > expectedEndDate && task.status !== 'completed';
@@ -26,22 +28,24 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
     };
 
-    const priorityLabel = priorityConfig[task.priority as keyof typeof priorityConfig]?.label || 'medium';
+    const priorityLabel = priorityConfig[task.priority as keyof typeof priorityConfig]?.label || 'Средний';
+    const urgent = task.priority >= 4;
 
     return (
-        <TouchableOpacity
+        <Reveal index={index}>
+        <MotionPressable
+            accessibilityLabel={task.title}
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={onPress}
-            activeOpacity={0.8}
         >
             <View style={styles.content}>
                 <View style={styles.topRow}>
-                    <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+                    <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
                         {task.title}
                     </Text>
-                    <View style={[styles.deadlineBlock, isOverdue && styles.deadlineBlockOverdue, isOverdue && isDark && { backgroundColor: '#7f1d1d', borderColor: '#680e0e' }]}>
-                        <Calendar size={12} color={isOverdue ? (isDark ? "#d6baba" : "#B91C1C") : colors.subtext} />
-                        <Text style={[styles.deadlineText, { color: colors.subtext }, isOverdue && styles.deadlineTextOverdue, isOverdue && isDark && { color: "#d6baba" }]}>
+                    <View style={[styles.deadlineBlock, { backgroundColor: isOverdue ? colors.dangerSurface : colors.iconBox }]}>
+                        <Calendar size={13} color={isOverdue ? colors.danger : colors.subtext} />
+                        <Text style={[styles.deadlineText, { color: isOverdue ? colors.danger : colors.subtext }]}>
                             {formatDate(expectedEndDate)}
                         </Text>
                     </View>
@@ -54,22 +58,22 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
                 {/* Инфо-панель: теги переносятся, assignees всегда справа */}
                 <View style={styles.infoPanel}>
                     <View style={styles.tagGroup}>
-                        <View style={[styles.statusTag, { backgroundColor: isDark ? colors.primary + '20' : '#f0fdfd', borderColor: isDark ? colors.primary + '40' : '#DCFCE7' }]}>
+                        <View style={[styles.statusTag, { backgroundColor: colors.roleBadge, borderColor: colors.roleBadge }]}>
                             <CircleDotDashed size={12} color={isDark ? colors.roleText : "#2A6E3F"} />
                             <Text style={[styles.statusLabel, { color: isDark ? colors.roleText : "#2a6e4f" }]}>
                                 {task.status}
                             </Text>
                         </View>
-                        <View style={[styles.priorityTag, { backgroundColor: isDark ? colors.primary + '20' : '#F0FDF4', borderColor: isDark ? colors.primary + '40' : '#DCFCE7' }]}>
-                            <Layers size={12} color={isDark ? colors.roleText : "#2A6E3F"} />
-                            <Text style={[styles.priorityLabel, { color: isDark ? colors.roleText : "#2A6E3F" }]} numberOfLines={1}>
+                        <View style={[styles.priorityTag, { backgroundColor: urgent ? colors.dangerSurface : colors.iconBox, borderColor: urgent ? colors.dangerSurface : colors.iconBox }]}>
+                            <Layers size={12} color={urgent ? colors.danger : colors.subtext} />
+                            <Text style={[styles.priorityLabel, { color: urgent ? colors.danger : colors.subtext }]} numberOfLines={1}>
                                 {priorityLabel}
                             </Text>
                         </View>
 
                         {isOverdue && (
-                            <View style={[styles.overdueTag, { backgroundColor: isDark ? '#334155' : '#F9FAFB', borderColor: colors.border }]}>
-                                <Text style={[styles.overdueTagText, { color: colors.text }]}>просрочено</Text>
+                            <View style={[styles.overdueTag, { backgroundColor: colors.dangerSurface, borderColor: colors.dangerSurface }]}>
+                                <Text style={[styles.overdueTagText, { color: colors.danger }]}>Просрочено</Text>
                             </View>
                         )}
                     </View>
@@ -81,12 +85,13 @@ export function TaskCard({ task, onPress }: TaskCardProps) {
                                 <Text style={[styles.userCount, { color: colors.text }]}>{task.users.length}</Text>
                             </View>
                         ) : (
-                            <Text style={styles.noAssignee}>Не назначен</Text>
+                            <Text style={[styles.noAssignee, { color: colors.subtext }]}>Не назначен</Text>
                         )}
                     </View>
                 </View>
             </View>
-        </TouchableOpacity>
+        </MotionPressable>
+        </Reveal>
     );
 }
 
@@ -95,22 +100,22 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        borderRadius: 14,
-        marginBottom: 8,
+        borderRadius: 18,
+        marginBottom: 12,
     },
     content: {
-        paddingVertical: 12,
-        paddingHorizontal: 14,
+        padding: 16,
     },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 8,
     },
     title: {
         fontSize: 15,
-        fontWeight: '700',
+        fontWeight: '600',
+        lineHeight: 21,
         color: '#1F2937',
         flex: 1,
         marginRight: 10,
@@ -119,11 +124,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        paddingHorizontal: 6,
-        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+        borderRadius: 8,
     },
     deadlineText: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#6B7280',
         fontWeight: '500',
     },
@@ -138,6 +144,7 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 13,
+        lineHeight: 19,
         color: '#6B7280',
         marginBottom: 10,
     },
@@ -225,7 +232,6 @@ const styles = StyleSheet.create({
     noAssignee: {
         fontSize: 11,
         color: '#9CA3AF',
-        fontStyle: 'italic',
     },
     dateText: {
         fontSize: 12,

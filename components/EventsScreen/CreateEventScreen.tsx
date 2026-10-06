@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-    View, Text, TextInput, TouchableOpacity, ScrollView,
-    ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet
-} from "react-native";
+import { View, Text, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 //@ts-ignore
 import DateTimePickerModal from "@/components/ui/Shared/DateTimePickerModal";
 import { router, useLocalSearchParams } from "expo-router";
-import {apiClient } from "@/api/api";
+import { apiClient } from "@/api/api";
 import { AuthManager } from "@/api/auth";
-import { LinearGradient } from "expo-linear-gradient";
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { MotionPressable } from '@/components/ui/Shared/Motion';
 import LocationPickerModal from "./LocationPickerModal";
 import Toast from "react-native-toast-message";
-import { ArrowLeft } from "lucide-react-native";
+
 import { PeoplePickerModal } from "@/components/EventsScreen/PeoplePickerModal";
 import { useTheme } from '@/context/ThemeContext';
 
@@ -339,22 +337,10 @@ export function CreateEventScreen() {
             style={{ flex: 1, backgroundColor: colors.background }}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 20 }]}
-            >
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <View pointerEvents="none">
-                        <ArrowLeft size={24} color="white" />
-                    </View>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{isEditMode ? "Редактирование события" : "Новое событие"}</Text>
-            </LinearGradient>
+            <ScreenHeader title={isEditMode ? 'Редактирование события' : 'Новое событие'} onBack={() => router.back()} overlap={false} />
             <ScrollView
                 ref={scrollViewRef}
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 45 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 110 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
@@ -369,49 +355,51 @@ export function CreateEventScreen() {
                         </View>
                     )}
 
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Название *</Text>
                     <TextInput
-                        style={[styles.input, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]}
+                        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         value={title}
                         onChangeText={setTitle}
-                        placeholder="Название *"
+                        accessibilityLabel="Название" placeholder="Название *"
                         placeholderTextColor={colors.subtext}
                     />
 
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Описание *</Text>
                     <TextInput
-                        style={[styles.input, styles.textArea, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]}
+                        style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         multiline
                         numberOfLines={8}
                         value={description}
                         onChangeText={setDescription}
-                        placeholder="Описание *"
+                        accessibilityLabel="Описание" placeholder="Описание *"
                         placeholderTextColor={colors.subtext}
                         textAlignVertical="top"
                     />
 
-                    <TouchableOpacity style={[styles.unifiedInput, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]} onPress={() => setMapModalVisible(true)}>
+                    <MotionPressable style={[styles.unifiedInput, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setMapModalVisible(true)}>
                         <Text style={[location ? styles.inputText : styles.placeholderText, location && { color: colors.text }]}>
                             {location ? location : "Выберите адрес на карте *"}
                         </Text>
                         <Ionicons name="map-outline" size={22} color={colors.subtext} />
-                    </TouchableOpacity>
+                    </MotionPressable>
 
-                    <TouchableOpacity style={[styles.unifiedInput, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]} onPress={() => setStartPickerVisible(true)}>
+                    <MotionPressable style={[styles.unifiedInput, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setStartPickerVisible(true)}>
                         <Text style={[startAt ? styles.inputText : styles.placeholderText, startAt && { color: colors.text }]}>
                             {startAt ? formatDateForDisplay(startAt) : "Выберите дату и время начала *"}
                         </Text>
                         <Ionicons name="calendar-outline" size={20} color={colors.subtext} />
-                    </TouchableOpacity>
+                    </MotionPressable>
 
-                    <TouchableOpacity style={[styles.unifiedInput, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]} onPress={() => setEndPickerVisible(true)}>
+                    <MotionPressable style={[styles.unifiedInput, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setEndPickerVisible(true)}>
                         <Text style={[endAt ? styles.inputText : styles.placeholderText, endAt && { color: colors.text }]}>
                             {endAt ? formatDateForDisplay(endAt) : "Выберите дату и время окончания *"}
                         </Text>
                         <Ionicons name="calendar-outline" size={20} color={colors.subtext} />
-                    </TouchableOpacity>
+                    </MotionPressable>
 
                     <View style={styles.selectWrapper}>
-                        <TouchableOpacity
-                            style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => setIsTypeSelectOpen(!isTypeSelectOpen)}
                         >
                             <Text style={[!eventType ? styles.placeholderText : styles.selectValue, eventType && { color: colors.text }]}>
@@ -422,12 +410,12 @@ export function CreateEventScreen() {
                                 size={20}
                                 color={colors.subtext}
                             />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
                         {isTypeSelectOpen && (
                             <View style={[styles.selectDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                                 {eventTypes.map((item) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         key={item.value}
                                         style={[
                                             styles.selectItem,
@@ -449,15 +437,15 @@ export function CreateEventScreen() {
                                         {eventType === item.value && (
                                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 ))}
                             </View>
                         )}
                     </View>
 
                     {isAdmin && (
-                        <TouchableOpacity
-                            style={[styles.checkboxContainer, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.checkboxContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => {
                                 setIsPublic(!isPublic);
                                 if (!isPublic) {
@@ -470,7 +458,7 @@ export function CreateEventScreen() {
                             <View style={[styles.checkbox, { borderColor: colors.subtext }, isPublic && [styles.checkboxChecked, { backgroundColor: colors.primary, borderColor: colors.primary }] ]}>
                                 {isPublic && <Ionicons name="checkmark" size={18} color="#fff" />}
                             </View>
-                        </TouchableOpacity>
+                        </MotionPressable>
                     )}
 
                     {(!isPublic || !isAdmin) && (
@@ -478,8 +466,8 @@ export function CreateEventScreen() {
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>
                                 {!isAdmin && !isPublic ? "Приглашения *" : "Приглашения"}
                             </Text>
-                            <TouchableOpacity
-                                style={[styles.inviteButton, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                            <MotionPressable
+                                style={[styles.inviteButton, { backgroundColor: colors.card, borderColor: colors.border }]}
                                 onPress={() => setPeoplePickerVisible(true)}
                             >
                                 <View style={styles.inviteButtonContent}>
@@ -494,17 +482,17 @@ export function CreateEventScreen() {
                                     </View>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color={colors.subtext} />
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
                     )}
 
-                    <TouchableOpacity
-                        style={[styles.publishButton, { backgroundColor: colors.primary }, isLoading && styles.publishButtonDisabled]}
+                    <MotionPressable
+                        style={[styles.publishButton, { backgroundColor: colors.primary }, { backgroundColor: colors.primary }, isLoading && styles.publishButtonDisabled]}
                         onPress={handleSave}
                         disabled={isLoading}
                     >
                         {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.publishButtonText}>{isEditMode ? "Сохранить изменения" : "Создать"}</Text>}
-                    </TouchableOpacity>
+                    </MotionPressable>
                 </View>
             </ScrollView>
 
@@ -553,31 +541,31 @@ const styles = StyleSheet.create({
     backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
     headerTitle: { fontSize: 20, fontWeight: "700", color: "#fff" },
     card: { borderRadius: 16, padding: 20, marginBottom: 20 },
-    warningAlert: { flexDirection: 'row', backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#fde047', borderRadius: 10, padding: 12, marginBottom: 6, marginTop: -36 },
+    warningAlert: { flexDirection: 'row', backgroundColor: '#fef3c7', borderWidth: 1, borderColor: '#fde047', borderRadius: 12, padding: 12, marginBottom: 6, marginTop: -36 },
     warningText: { flex: 1, color: '#b45309', fontSize: 14, marginLeft: 8, lineHeight: 20 },
-    input: { backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, marginBottom: 14, marginTop: 8 },
+    input: { backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 14, fontSize: 15, marginBottom: 14, marginTop: 8 },
     textArea: { textAlignVertical: "top", minHeight: 100 },
-    unifiedInput: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14, marginTop: 8 },
+    unifiedInput: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 14, marginBottom: 14, marginTop: 8 },
     inputText: { fontSize: 15, color: "#333", flex: 1 },
     placeholderText: { fontSize: 15, color: "#9ca3af", flex: 1 },
-    publishButton: { backgroundColor: "#0f6319", flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 10, marginTop: 25 },
+    publishButton: { backgroundColor: "#0f6319", flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 12, marginTop: 25 },
     publishButtonDisabled: { backgroundColor: "#9ca3af" },
     publishButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
     selectWrapper: { marginBottom: 14, marginTop: 8, position: 'relative', zIndex: 1000 },
-    selectTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+    selectTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 14 },
     selectValue: { fontSize: 15, color: "#333", flex: 1 },
-    selectDropdown: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 10, marginTop: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, zIndex: 1001 },
+    selectDropdown: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, marginTop: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3, zIndex: 1001 },
     selectItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
     selectItemSelected: { backgroundColor: '#f0f7f0' },
     selectItemText: { fontSize: 15, color: '#333' },
     selectItemTextSelected: { color: '#0f6319', fontWeight: '500' },
-    checkboxContainer: { backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 14, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    checkboxContainer: { backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: "#ddd", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, marginBottom: 14, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1, borderColor: '#6b7280', justifyContent: 'center', alignItems: 'center' },
     checkboxChecked: { backgroundColor: '#0f6319', borderColor: '#0f6319' },
     checkboxLabel: { fontSize: 15, color: '#333' },
     section: { marginBottom: 16, marginTop: 8 },
     sectionTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 8 },
-    inviteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f7f7f7', borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12 },
+    inviteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f7f7f7', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 12 },
     inviteButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     inviteButtonTitle: { fontSize: 15, fontWeight: '500', color: '#333' },
     inviteButtonSubtitle: { fontSize: 11, color: '#6b7280', marginTop: 2 },

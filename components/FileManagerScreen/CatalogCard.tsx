@@ -1,6 +1,7 @@
 import { CatalogItem } from '@/api/catalogService';
 import { ChevronRight, Folder } from 'lucide-react-native';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { MotionPressable, Reveal } from '@/components/ui/Shared/Motion';
 import { styles } from './file-manager-screen';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -10,15 +11,16 @@ interface CatalogCardProps {
 }
 
 export function CatalogCard({ catalog, onPress }: CatalogCardProps) {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     return (
-        <TouchableOpacity
+        <Reveal><MotionPressable
+            accessibilityLabel={`Открыть каталог ${catalog.name}`}
             style={[styles.catalogItem, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => onPress(catalog)}
         >
             <View style={styles.catalogContent}>
-                <View style={[styles.catalogIconContainer, { backgroundColor: isDark ? colors.primary + '20' : '#f0fdf4' }]}>
-                    <Folder size={24} color={isDark ? colors.roleText : "#2A6E3F"} />
+                <View style={[styles.catalogIconContainer, { backgroundColor: colors.roleBadge }]}>
+                    <Folder size={24} color={colors.roleText} />
                 </View>
                 <View style={styles.catalogInfo}>
                     <Text style={[styles.catalogName, { color: colors.text }]} numberOfLines={1}>
@@ -28,6 +30,6 @@ export function CatalogCard({ catalog, onPress }: CatalogCardProps) {
                 </View>
                 <ChevronRight size={20} color={colors.subtext} />
             </View>
-        </TouchableOpacity>
+        </MotionPressable></Reveal>
     );
 }

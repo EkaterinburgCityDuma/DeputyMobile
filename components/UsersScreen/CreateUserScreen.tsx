@@ -1,28 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    StatusBar,
-    Modal,
-    FlatList,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import {useLocalSearchParams, useRouter} from 'expo-router';
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { MotionPressable } from '@/components/ui/Shared/Motion';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { Profile } from "@/models/ProfileModel";
 import { AuthManager } from "@/api/auth";
 import { SelectionPopup } from "@/components/UsersScreen/SelectionPopup";
 import Toast from "react-native-toast-message";
-import {ArrowLeft, Building2, X} from "lucide-react-native";
+import { Building2, X } from "lucide-react-native";
 import { apiClient } from '@/api/api';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -245,44 +233,33 @@ const CreateUserScreen = () => {
             style={{ flex: 1, backgroundColor: colors.background }}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
 
             <ScrollView
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 110 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                <LinearGradient
-                    colors={[colors.primary, colors.secondary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.header, { paddingTop: insets.top + 20 }]}
-                >
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <View pointerEvents="none">
-                            <ArrowLeft size={24} color="white" />
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>
-                        {isEditMode ? 'Редактирование профиля' : 'Регистрация'}
-                    </Text>
-                </LinearGradient>
+            <ScreenHeader title={isEditMode ? 'Редактирование профиля' : 'Новый аккаунт'} onBack={() => router.back()} overlap={false} />
 
                 <View style={styles.card}>
                     {/* ФИО, Email, Должность */}
-                    <TextInput style={[styles.input, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]} value={fullName} onChangeText={setFullName} placeholder="ФИО *" placeholderTextColor={colors.subtext} />
-                    <TextInput style={[styles.input, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]} value={email} onChangeText={setEmail} placeholder="Email *" placeholderTextColor={colors.subtext} />
-                    <TextInput style={[styles.input, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border, color: colors.text }]} value={jobTitle} onChangeText={setJobTitle} placeholder="Должность" placeholderTextColor={colors.subtext} />
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>ФИО *</Text>
+                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={fullName} onChangeText={setFullName} accessibilityLabel="ФИО" placeholder="ФИО *" placeholderTextColor={colors.subtext} />
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Электронная почта *</Text>
+                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={email} onChangeText={setEmail} accessibilityLabel="Email" placeholder="Email *" placeholderTextColor={colors.subtext} />
+                    <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Должность</Text>
+                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={jobTitle} onChangeText={setJobTitle} accessibilityLabel="Должность" placeholder="Должность" placeholderTextColor={colors.subtext} />
 
                     {/* Выбор отделов (множественный) */}
-                    <TouchableOpacity style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]} onPress={openDepartmentModal}>
+                    <MotionPressable style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openDepartmentModal}>
                         <Text style={[selectedDepartments.length > 0 ? styles.selectValue : styles.placeholderText, selectedDepartments.length > 0 && { color: colors.text }]}>
                             {selectedDepartments.length > 0
                                 ? `Выбрано отделов: ${selectedDepartments.length}`
                                 : 'Выберите отделы'}
                         </Text>
                         <Ionicons name="chevron-down" size={20} color={colors.subtext} />
-                    </TouchableOpacity>
+                    </MotionPressable>
 
                     {/* Список выбранных отделов */}
                     {selectedDepartments.length > 0 && (
@@ -290,9 +267,9 @@ const CreateUserScreen = () => {
                             {selectedDepartments.map((dept) => (
                                 <View key={dept.id} style={[styles.selectedDepartmentChip, { backgroundColor: isDark ? colors.primary + '40' : '#e8f5e9' }]}>
                                     <Text style={[styles.selectedDepartmentText, { color: isDark ? colors.roleText : '#2A6E3F' }]}>{dept.name}</Text>
-                                    <TouchableOpacity onPress={() => removeDepartment(dept.id)}>
+                                    <MotionPressable onPress={() => removeDepartment(dept.id)}>
                                         <X size={16} color={isDark ? colors.roleText : "#2A6E3F"} />
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 </View>
                             ))}
                         </View>
@@ -300,33 +277,33 @@ const CreateUserScreen = () => {
 
                     {/* ПАРОЛЬ: Показываем только если НЕ режим редактирования */}
                     {!isEditMode && (
-                        <View style={[styles.passwordContainer, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}>
+                        <View style={[styles.passwordContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                             <TextInput
                                 style={[styles.passwordInput, { color: colors.text }]}
                                 value={password}
                                 onChangeText={setPassword}
-                                placeholder="Пароль *"
+                                accessibilityLabel="Пароль" placeholder="Пароль *"
                                 placeholderTextColor={colors.subtext}
                                 secureTextEntry={!isPasswordVisible}
                             />
                             <View style={styles.passwordActions}>
-                                <TouchableOpacity onPress={generatePassword} style={styles.iconButton}>
+                                <MotionPressable onPress={generatePassword} style={styles.iconButton}>
                                     <Ionicons name="refresh-outline" size={20} color={colors.subtext} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={copyPassword} style={styles.iconButton}>
+                                </MotionPressable>
+                                <MotionPressable onPress={copyPassword} style={styles.iconButton}>
                                     <Ionicons name="copy-outline" size={20} color={colors.subtext} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.iconButton}>
+                                </MotionPressable>
+                                <MotionPressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.iconButton}>
                                     <Ionicons name={isPasswordVisible ? "eye-off-outline" : "eye-outline"} size={20} color={colors.subtext} />
-                                </TouchableOpacity>
+                                </MotionPressable>
                             </View>
                         </View>
                     )}
 
                     {/* Выбор Роли */}
                     <View style={[styles.selectWrapper, { zIndex: 1000 }]}>
-                        <TouchableOpacity
-                            style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => setIsRoleSelectOpen(!isRoleSelectOpen)}
                         >
                             <Text style={[!selectedRole ? styles.placeholderText : styles.selectValue, selectedRole && { color: colors.text }]}>
@@ -337,12 +314,12 @@ const CreateUserScreen = () => {
                                 size={20}
                                 color={colors.subtext}
                             />
-                        </TouchableOpacity>
+                        </MotionPressable>
 
                         {isRoleSelectOpen && (
                             <View style={[styles.selectDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                                 {roles.map((role) => (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         key={role}
                                         style={[
                                             styles.selectItem,
@@ -364,7 +341,7 @@ const CreateUserScreen = () => {
                                         {selectedRole === role && (
                                             <Ionicons name="checkmark" size={18} color={colors.primary} />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 ))}
                             </View>
                         )}
@@ -372,8 +349,8 @@ const CreateUserScreen = () => {
 
                     {/* Выбор Депутата (только для Helper) */}
                     {selectedRole === 'Helper' && (
-                        <TouchableOpacity
-                            style={[styles.selectTrigger, { backgroundColor: isDark ? colors.card : '#f7f7f7', borderColor: colors.border }]}
+                        <MotionPressable
+                            style={[styles.selectTrigger, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => setDeputyPopupVisible(true)}
                         >
                             <View style={{ flex: 1 }}>
@@ -387,11 +364,11 @@ const CreateUserScreen = () => {
                                 </Text>
                             </View>
                             <Ionicons name="chevron-down" size={20} color={colors.subtext} />
-                        </TouchableOpacity>
+                        </MotionPressable>
                     )}
 
-                    <TouchableOpacity
-                        style={[styles.publishButton, { backgroundColor: colors.primary }, isSubmitting && styles.publishButtonDisabled]}
+                    <MotionPressable
+                        style={[styles.publishButton, { backgroundColor: colors.primary }, { backgroundColor: colors.primary }, isSubmitting && styles.publishButtonDisabled]}
                         onPress={handleSubmit}
                         disabled={isSubmitting}
                     >
@@ -402,7 +379,7 @@ const CreateUserScreen = () => {
                                 {isEditMode ? 'Сохранить изменения' : 'Создать пользователя'}
                             </Text>
                         )}
-                    </TouchableOpacity>
+                    </MotionPressable>
                 </View>
             </ScrollView>
 
@@ -417,9 +394,9 @@ const CreateUserScreen = () => {
                     <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
                         <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
                             <Text style={[styles.modalTitle, { color: colors.text }]}>Выберите отделы</Text>
-                            <TouchableOpacity onPress={() => setDepartmentPopupVisible(false)}>
+                            <MotionPressable onPress={() => setDepartmentPopupVisible(false)}>
                                 <Ionicons name="close" size={24} color={colors.text} />
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
 
                         <FlatList
@@ -428,7 +405,7 @@ const CreateUserScreen = () => {
                             renderItem={({ item }) => {
                                 const isSelected = tempSelectedDepartments.some(d => d.id === item.id);
                                 return (
-                                    <TouchableOpacity
+                                    <MotionPressable
                                         style={[styles.modalDeptItem, { borderBottomColor: colors.divider }, isSelected && [styles.modalDeptItemSelected, { backgroundColor: colors.primary }] ]}
                                         onPress={() => toggleDepartmentSelection(item)}
                                     >
@@ -441,27 +418,27 @@ const CreateUserScreen = () => {
                                         {isSelected && (
                                             <Ionicons name="checkmark-circle" size={24} color="#fff" />
                                         )}
-                                    </TouchableOpacity>
+                                    </MotionPressable>
                                 );
                             }}
                             style={styles.modalList}
                         />
 
                         <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-                            <TouchableOpacity
+                            <MotionPressable
                                 style={[styles.modalCancelButton, { backgroundColor: isDark ? colors.iconBox : '#f3f4f6' }]}
                                 onPress={() => setDepartmentPopupVisible(false)}
                             >
                                 <Text style={[styles.modalCancelText, { color: colors.subtext }]}>Отмена</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </MotionPressable>
+                            <MotionPressable
                                 style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
                                 onPress={confirmDepartmentSelection}
                             >
                                 <Text style={styles.modalConfirmText}>
                                     Подтвердить ({tempSelectedDepartments.length})
                                 </Text>
-                            </TouchableOpacity>
+                            </MotionPressable>
                         </View>
                     </View>
                 </View>
@@ -505,9 +482,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
         fontSize: 15,
         marginBottom: 14,
         marginTop: 8,
@@ -518,14 +495,14 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
         marginBottom: 14,
         marginTop: 8,
     },
     passwordInput: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 14,
         fontSize: 15,
     },
     passwordActions: {
@@ -544,7 +521,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 14,
-        borderRadius: 10,
+        borderRadius: 12,
         marginTop: 25,
     },
     publishButtonDisabled: { backgroundColor: "#9ca3af" },
@@ -557,9 +534,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#f7f7f7",
         borderWidth: 1,
         borderColor: "#ddd",
-        borderRadius: 10,
+        borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
         marginBottom: 14,
         marginTop: 8,
     },
@@ -571,7 +548,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#ddd',
-        borderRadius: 10,
+        borderRadius: 12,
         marginTop: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -608,7 +585,7 @@ const styles = StyleSheet.create({
     deptIcon: {
         width: 40,
         height: 40,
-        borderRadius: 10,
+        borderRadius: 12,
         backgroundColor: '#f0f9f0',
         justifyContent: 'center',
         alignItems: 'center',
@@ -710,7 +687,7 @@ const styles = StyleSheet.create({
     modalCancelButton: {
         flex: 1,
         paddingVertical: 12,
-        borderRadius: 10,
+        borderRadius: 12,
         backgroundColor: '#f3f4f6',
         alignItems: 'center',
     },
@@ -722,7 +699,7 @@ const styles = StyleSheet.create({
     modalConfirmButton: {
         flex: 1,
         paddingVertical: 12,
-        borderRadius: 10,
+        borderRadius: 12,
         backgroundColor: '#2A6E3F',
         alignItems: 'center',
     },

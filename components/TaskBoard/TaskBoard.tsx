@@ -1,25 +1,16 @@
-import { taskService } from '@/api/taskService';
+import { ScreenHeader } from '@/components/ui/Shared/ScreenHeader';
+import { Button } from '@/components/ui/Shared/Button';
+import { ListTodo, AlertCircle, Clock, RotateCcw } from 'lucide-react-native';
+
 import { TaskCard } from "@/components/TaskBoard/TaskCard";
 import { Select } from "@/components/ui/Shared/Select";
 import { SkeletonLoader } from "@/components/ui/Shared/SkeletonLoader";
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import {
-    AlertCircle,
-    Clock,
-    Plus,
-    RotateCcw
-} from 'lucide-react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+
+
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import {
-    FlatList,
-    Text,
-    TouchableOpacity,
-    View,
-    RefreshControl, ScrollView
-} from 'react-native';
+import { FlatList, Text, TouchableOpacity, View, RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styles } from './task-board-style';
 import { AuthManager } from "@/api/auth";
@@ -27,10 +18,10 @@ import { declOfNum } from '@/utils';
 import { Filters } from '../ui/Shared/Filters';
 import { useTheme } from '@/context/ThemeContext';
 
+import { useTaskStore } from '@/store/useTaskStore';
+
 type TaskMode = 'all' | 'my_tasks' | 'assigned' | 'authored';
 type StatusItem = { name: string; isDefault: boolean };
-
-import { useTaskStore } from '@/store/useTaskStore';
 
 export function TaskBoard() {
     const { colors, isDark } = useTheme();
@@ -137,24 +128,9 @@ export function TaskBoard() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.header, { paddingTop: insets.top + 15 }]}
-            >
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Задачи</Text>
-                    <Text style={styles.headerSubtitle}>
-                        {loading ? 'Загрузка...' : `${filteredTasks.length} ${declOfNum(filteredTasks.length, ['задача', 'задачи', 'задач'])}`}
-                    </Text>
-                </View>
-                <TouchableOpacity style={styles.newTaskButton} onPress={handleNewTask}>
-                    <View pointerEvents="none">
-                        <Plus size={20} color="white" />
-                    </View>
-                </TouchableOpacity>
-            </LinearGradient>
+            <ScreenHeader title="Задачи" icon={ListTodo}
+                subtitle={loading ? 'Загрузка…' : `${filteredTasks.length} ${declOfNum(filteredTasks.length, ['задача', 'задачи', 'задач'])}`}
+                actions={<Button solid iconName="Plus" label="Создать задачу" onClick={handleNewTask} />} />
 
             {!error && (
                 <Filters
