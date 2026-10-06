@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -65,15 +65,18 @@ const EventsScreen: React.FC = () => {
         [viewDate.year, viewDate.month, getMonthInGenitive]
     );
 
-    const loadEvents = useCallback(async (year: number, month: number, isRefresh = false, isOnlyMy = false) => {
-        setViewDate({ year, month });
-        return await fetchEvents(year, month, isRefresh, isOnlyMy);
-    }, [fetchEvents]);
+    const handleMonthChange = useCallback((direction: number) => {
+        setSelectedDate(undefined);
+        setViewDate(previous => {
+            const next = new Date(previous.year, previous.month + direction, 1);
+            return { year: next.getFullYear(), month: next.getMonth() };
+        });
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
-            loadEvents(viewDate.year, viewDate.month, false, eventsFilter === 'mine');
-        }, [viewDate.year, viewDate.month, eventsFilter, loadEvents])
+            fetchEvents(viewDate.year, viewDate.month, false, eventsFilter === 'mine');
+        }, [viewDate.year, viewDate.month, eventsFilter, fetchEvents])
     );
 
     // Обработка смены режима отображения
@@ -88,19 +91,19 @@ const EventsScreen: React.FC = () => {
         if (mode === 'list') {
             setSelectedDate(undefined);
             if (viewDate.month !== today.getMonth() || viewDate.year !== today.getFullYear()) {
-                loadEvents(today.getFullYear(), today.getMonth(), false, eventsFilter === 'mine');
+                setViewDate({ year: today.getFullYear(), month: today.getMonth() });
             }
         }
-    }, [eventsFilter, viewDate.month, viewDate.year, loadEvents]);
-
-    useEffect(() => {
-        loadEvents(viewDate.year, viewDate.month, false, eventsFilter === 'mine');
-    }, [eventsFilter]);
+    }, [eventsFilter, viewDate.month, viewDate.year]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await loadEvents(viewDate.year, viewDate.month, true, eventsFilter === 'mine');
-    }, [viewDate.year, viewDate.month, eventsFilter, loadEvents]);
+        try {
+            await fetchEvents(viewDate.year, viewDate.month, true, eventsFilter === 'mine');
+        } finally {
+            setRefreshing(false);
+        }
+    }, [viewDate.year, viewDate.month, eventsFilter, fetchEvents]);
 
     const todayKey = useMemo(() => getTodayLocalKey(), []);
 
@@ -230,7 +233,9 @@ const EventsScreen: React.FC = () => {
                                 selectedDate={selectedDate}
                                 onSelectDate={handleDateSelect}
                                 events={events}
-                                onMonthChange={(y, m) => loadEvents(y, m, false, eventsFilter === 'mine')}
+                                currentYear={viewDate.year}
+                                currentMonth={viewDate.month}
+                                onMonthChange={handleMonthChange}
                             />
                         )}
                     </View>

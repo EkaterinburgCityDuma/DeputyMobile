@@ -12,6 +12,8 @@ interface EventsState {
     fetchEvents: (year: number, month: number, isRefresh?: boolean, isOnlyMy?: boolean) => Promise<Event[]>;
 }
 
+let latestRequestId = 0;
+
 export const useEventsStore = create<EventsState>()(
     persist(
         (set, get) => ({
@@ -20,6 +22,7 @@ export const useEventsStore = create<EventsState>()(
             error: null,
 
             fetchEvents: async (year: number, month: number, isRefresh = false, isOnlyMy = false) => {
+                const requestId = ++latestRequestId;
                 try {
                     if (!isRefresh && get().events.length === 0) {
                         set({ isLoading: true });
@@ -43,9 +46,10 @@ export const useEventsStore = create<EventsState>()(
                     // Merge or replace events? For simplicity, we'll replace the current view's month/year events
                     // But persist-middleware will save the whole 'events' array.
                     // To keep it simple, we'll just store the latest fetched list.
-                    set({ events: data, isLoading: false });
+                    if (requestId === latestRequestId) set({ events: data, isLoading: false });
                     return data;
                 } catch (error: any) {
+                    if (requestId !== latestRequestId) return get().events;
                     console.error('Events fetch error:', error);
                     const errorMessage = 'Не удалось загрузить события';
 

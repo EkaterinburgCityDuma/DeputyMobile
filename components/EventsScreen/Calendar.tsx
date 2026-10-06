@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { MoveLeft, MoveRight } from 'lucide-react-native';
@@ -10,21 +10,15 @@ interface CalendarProps {
     selectedDate: string | undefined;
     onSelectDate: (date: string) => void;
     events: Event[];
-    onMonthChange?: (year: number, month: number) => void;
+    currentYear: number;
+    currentMonth: number;
+    onMonthChange: (direction: number) => void;
 }
 
-export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate, events, onMonthChange }) => {
+export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate, events, currentYear, currentMonth, onMonthChange }) => {
     const { colors, isDark } = useTheme();
-    const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
     const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-
-    const changeMonth = (newMonth: number, newYear: number) => {
-        setCurrentMonth(newMonth);
-        setCurrentYear(newYear);
-        if (onMonthChange) onMonthChange(newYear, newMonth);
-    };
 
     const eventsByDate = useMemo(() => {
         const map: Record<string, Event[]> = {};
@@ -68,7 +62,7 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate, 
                 <View style={styles.calendarHeader}>
                     <TouchableOpacity
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        onPress={() => changeMonth(currentMonth === 0 ? 11 : currentMonth - 1, currentMonth === 0 ? currentYear - 1 : currentYear)}
+                        onPress={() => onMonthChange(-1)}
                         style={styles.navButton}
                     >
                         <View pointerEvents="none">
@@ -80,7 +74,7 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDate, onSelectDate, 
 
                     <TouchableOpacity
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        onPress={() => changeMonth(currentMonth === 11 ? 0 : currentMonth + 1, currentMonth === 11 ? currentYear + 1 : currentYear)}
+                        onPress={() => onMonthChange(1)}
                         style={styles.navButton}
                     >
                         <View pointerEvents="none">
