@@ -4,6 +4,18 @@ import { BlurView } from "expo-blur";
 import {Building2, Calendar, Folder, House, ListTodo, User} from "lucide-react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
+import { usePathname, useRouter, useSegments } from 'expo-router';
+import type { LucideIcon } from 'lucide-react-native';
+import type { EdgeInsets } from 'react-native-safe-area-context';
+
+const menuItems = [
+    { name: 'DashboardScreen', href: '/(screens)/DashboardScreen', Icon: House, label: 'главная' },
+    { name: 'EventsScreen', href: '/(screens)/EventsScreen', Icon: Calendar, label: 'события' },
+    { name: 'TaskBoardScreen', href: '/(screens)/TaskBoardScreen', Icon: ListTodo, label: 'задачи' },
+    { name: 'CatalogScreen', href: '/(screens)/CatalogScreen', Icon: Folder, label: 'каталог' },
+    { name: 'UsersScreen', href: '/(screens)/UsersScreen', Icon: User, label: 'аккаунты' },
+    { name: 'DepartmentsScreen', href: '/(screens)/DepartmentsScreen', Icon: Building2, label: 'отделы' },
+] as const;
 
 const SPRING_CONFIG = {
     damping: 15, // Затухание
@@ -11,7 +23,13 @@ const SPRING_CONFIG = {
     mass: 0.5, // Масса
 };
 
-function TabButton({ route, isFocused, descriptors, navigation, color, Icon, label }) {
+function TabButton({ isFocused, onPress, color, Icon, label }: {
+    isFocused: boolean;
+    onPress: () => void;
+    color: string;
+    Icon: LucideIcon;
+    label: string;
+}) {
     const scaleValue = useSharedValue(1);
 
     const animatedStyle = useAnimatedStyle(() => {
@@ -19,18 +37,6 @@ function TabButton({ route, isFocused, descriptors, navigation, color, Icon, lab
             transform: [{ scale: scaleValue.value }],
         };
     });
-
-    const onPress = () => {
-        const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-        });
-
-        if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-        }
-    };
 
     const handlePressIn = () => {
         scaleValue.value = withSpring(0.8, SPRING_CONFIG); // Уменьшаем до 0.9
@@ -62,8 +68,11 @@ function TabButton({ route, isFocused, descriptors, navigation, color, Icon, lab
     );
 }
 
-export function CustomBottomTabBar({ state, descriptors, navigation, insets, role }) {
+export function CustomBottomTabBar({ insets, role }: { insets: EdgeInsets; role: string | null }) {
     const { colors, isDark } = useTheme();
+    const router = useRouter();
+    const pathname = usePathname();
+    const segments = useSegments();
 
     return (
         <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
@@ -80,38 +89,19 @@ export function CustomBottomTabBar({ state, descriptors, navigation, insets, rol
                     }
                 ]}
             >
-                {state.routes.map((route, index) => {
-                    const { options } = descriptors[route.key];
-
-                    // Фильтрация
-                    if (options.href === null) return null;
-                    if (route.name === "UserListScreen" && role !== "Admin") return null;
-                    if (route.name === "DepartmentsScreen" && role !== "Admin") return null;
-
-                    const isFocused = state.index === index;
+                {menuItems.map(({ name, href, Icon, label }) => {
+                    if (name === 'DepartmentsScreen' && role !== 'Admin') return null;
+                    const isFocused = segments[1] === name;
                     const activeColor = isDark ? "#4ade80" : "#2A6E3F";
                     const color = isFocused ? activeColor : colors.subtext;
 
-                    // Маппинг данных
-                    let Icon = House;
-                    let label = "";
-                    switch (route.name) {
-                        case "DashboardScreen": Icon = House; label = "главная"; break;
-                        case "EventsScreen": Icon = Calendar; label = "события"; break;
-                        case "TaskBoardScreen": Icon = ListTodo; label = "задачи"; break;
-                        case "CatalogScreen": Icon = Folder; label = "каталог"; break;
-                        case "UsersScreen": Icon = User; label = "аккаунты"; break;
-                        case "DepartmentsScreen": Icon = Building2; label = "отделы"; break;
-                        default: return null;
-                    }
-
                     return (
                         <TabButton
-                            key={route.key}
-                            route={route}
+                            key={name}
                             isFocused={isFocused}
-                            descriptors={descriptors}
-                            navigation={navigation}
+                            onPress={() => {
+                                if (pathname !== `/${name}`) router.push(href);
+                            }}
                             color={color}
                             Icon={Icon}
                             label={label}

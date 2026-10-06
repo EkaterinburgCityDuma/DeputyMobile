@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import {AuthManager} from "@/api/auth";
-import {useRouter, useSegments} from 'expo-router';
+import {useRouter, usePathname} from 'expo-router';
 import {requestUserPermission, registerDeviceToken, getFCMToken} from "@/api/fcmService"
 import { getMessaging, onMessage, onTokenRefresh } from '@react-native-firebase/messaging';
 import {YamapInstance} from "react-native-yamap-plus";
@@ -9,16 +9,16 @@ import Toast from "react-native-toast-message";
 
 function useProtectedRoute(isAuthenticated: boolean | null) {
     const router = useRouter();
-    const segments = useSegments();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (isAuthenticated === null) return;
-        if (!isAuthenticated) {
+        if (!isAuthenticated && pathname !== '/login') {
             router.replace('/login');
-        } else if (isAuthenticated) {
+        } else if (isAuthenticated && pathname === '/') {
             router.replace('/(screens)/DashboardScreen');
         }
-    }, [isAuthenticated, segments]);
+    }, [isAuthenticated, pathname, router]);
 }
 
 const messagingInstance = getMessaging();

@@ -1,4 +1,5 @@
-import { Tabs } from "expo-router";
+import { Stack } from "expo-router";
+import { View } from 'react-native';
 import React, { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthManager } from "@/api/auth";
@@ -21,21 +22,9 @@ export default function AppLayout() {
     }, []);
 
     return (
-        <Tabs
-            tabBar={(props) => (
-                <CustomBottomTabBar {...props} insets={insets} role={role} />
-            )}
-            screenOptions={{
-                headerShown: false,
-            }}
-            safeAreaInsets={{ bottom: 0, top: 0 }}
-        >
-            <Tabs.Screen name="DashboardScreen" />
-            <Tabs.Screen name="EventsScreen" />
-            <Tabs.Screen name="TaskBoardScreen" />
-            <Tabs.Screen name="CatalogScreen" />
-            <Tabs.Screen name="UsersScreen" />
-            <Tabs.Screen name="DepartmentsScreen" />
-        </Tabs>
+        <View style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }} />
+            <CustomBottomTabBar insets={insets} role={role} />
+        </View>
     );
 }

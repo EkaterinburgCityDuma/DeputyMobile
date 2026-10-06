@@ -222,7 +222,8 @@ export const EventDetailsScreen: React.FC = () => {
     const userId = AuthManager.getUserId();
 
     const handleBack = () => {
-        router.replace('/EventsScreen');
+        if (router.canGoBack()) router.back();
+        else router.replace('/EventsScreen');
     };
 
     const loadEvent = useCallback(async (isRefresh = false) => {

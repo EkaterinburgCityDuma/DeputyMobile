@@ -26,7 +26,8 @@ import {
     Moon,
     Check,
     Monitor,
-    Sun
+    Sun,
+    ArrowLeft
 } from 'lucide-react-native';
 import {declOfNum} from "@/utils";
 import { useFocusEffect } from '@react-navigation/native';
@@ -167,7 +168,12 @@ export function ProfileScreen() {
                     style={[styles.header, { paddingTop: insets.top + 15 }]}
                 >
                     <View style={styles.headerTopRow}>
-                        <Text style={styles.headerTitle}>Профиль</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            {router.canGoBack() && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Назад" onPress={() => router.back()} style={styles.iconButton}>
+                                <ArrowLeft size={22} color="white" />
+                            </TouchableOpacity>}
+                            <Text style={styles.headerTitle}>Профиль</Text>
+                        </View>
                         <View style={styles.headerButtons}>
                             {(profile.id === userId || userRole === "Admin") && (
                                 <TouchableOpacity
