@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    Modal, StyleSheet, Alert, ActivityIndicator
+    Modal, StyleSheet, Alert, ActivityIndicator, Platform, KeyboardAvoidingView
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LocationPickerMap } from "@/components/ui/LocationPickerMap/LocationPickerMap";
 import * as Location from 'expo-location';
+import { useTheme } from '@/context/ThemeContext';
 
 const INITIAL_REGION = {
     lat: 56.837239,
@@ -17,7 +18,7 @@ const INITIAL_REGION = {
 interface LocationPickerModalProps {
     visible: boolean;
     onClose: () => void;
-    onLocationSelected: (location: { address: string; coords: { lat: number; lon: number } }) => void;
+    onLocationSelected: (location: { address: string; coords: { lat: number; lon: number } | null }) => void;
     initialLocation?: string;
     initialCoords?: { lat: number; lon: number } | null;
 }
@@ -29,12 +30,20 @@ export default function LocationPickerModal({
                                                 initialLocation,
                                                 initialCoords
                                             }: LocationPickerModalProps) {
+    const { colors } = useTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
     const [location, setLocation] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [mapFailed, setMapFailed] = useState(false);
+    const [manualAddress, setManualAddress] = useState('');
+    const handleMapError = useCallback(() => {
+        setMapFailed(true);
+        setManualAddress(initialLocation || '');
+    }, [initialLocation]);
 
     // Новые стейты для отслеживания реального положения камеры и разрешений
     const [currentCamera, setCurrentCamera] = useState({ lat: INITIAL_REGION.lat, lon: INITIAL_REGION.lon, zoom: INITIAL_REGION.zoom });
@@ -48,6 +57,8 @@ export default function LocationPickerModal({
     // Сброс состояния и установка начальной точки при открытии модалки
     useEffect(() => {
         if (visible) {
+            setMapFailed(Platform.OS === 'web' && !process.env.EXPO_PUBLIC_GEOCODER_API_KEY?.trim());
+            setManualAddress(initialLocation || '');
             // Тихо проверяем разрешения, чтобы понять, можно ли рендерить showUserPosition
             Location.getForegroundPermissionsAsync().then(({ status }) => {
                 setHasLocationPermission(status === 'granted');
@@ -298,6 +309,36 @@ export default function LocationPickerModal({
         setSearchResults([]);
     }, []);
 
+    if (mapFailed) return (
+        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+                <View style={[styles.manualHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.divider, backgroundColor: colors.card }]}>
+                    <Text style={[styles.manualTitle, { color: colors.text }]}>Место проведения</Text>
+                    <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть" style={styles.manualClose}>
+                        <Ionicons name="close" size={24} color={colors.subtext} />
+                    </TouchableOpacity>
+                </View>
+                <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.manualContent}>
+                    <View style={[styles.manualCard, { backgroundColor: colors.card }]}>
+                        <Text style={[styles.manualTitle, { color: colors.text }]}>Укажите адрес</Text>
+                        <Text style={[styles.manualHint, { color: colors.subtext }]}>Карта недоступна. Адрес можно сохранить вручную.</Text>
+                        <Text style={[styles.manualLabel, { color: colors.subtext }]}>Адрес места проведения</Text>
+                        <TextInput value={manualAddress} onChangeText={setManualAddress} placeholder="Город, улица, дом или название места"
+                            accessibilityLabel="Адрес места проведения" placeholderTextColor={colors.subtext} selectionColor={colors.roleText}
+                            multiline textAlignVertical="top"
+                            style={[styles.manualInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} />
+                    </View>
+                </ScrollView>
+                <View style={[styles.manualFooter, { paddingBottom: insets.bottom + 16, backgroundColor: colors.card, borderTopColor: colors.divider }]}>
+                <TouchableOpacity accessibilityRole="button" disabled={!manualAddress.trim()} style={[styles.confirmBtn, { backgroundColor: colors.primary, opacity: manualAddress.trim() ? 1 : 0.5 }]}
+                    onPress={() => { onLocationSelected({ address: manualAddress.trim(), coords: null }); onClose(); }}>
+                    <Text style={styles.confirmBtnText}>Сохранить адрес</Text>
+                </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
+        </Modal>
+    );
+
     return (
         <Modal
             visible={visible}
@@ -309,25 +350,25 @@ export default function LocationPickerModal({
                 {/* Верхняя панель с поиском */}
                 <View style={[styles.mapHeader, { paddingTop: insets.top + 10 }]}>
                     <View style={styles.searchContainer}>
-                        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                        <Ionicons name="search" size={20} color={colors.subtext} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Поиск места или адреса"
-                            placeholderTextColor="#999"
+                            placeholderTextColor={colors.subtext}
                             value={searchQuery}
                             onChangeText={handleSearchChange}
                         />
                         {searchQuery.length > 0 && (
                             <TouchableOpacity onPress={clearSearch}>
-                                <Ionicons name="close-circle" size={20} color="#999" />
+                                <Ionicons name="close-circle" size={20} color={colors.subtext} />
                             </TouchableOpacity>
                         )}
                         {isSearching && (
-                            <ActivityIndicator size="small" color="#2A6E3F" style={{ marginLeft: 8 }} />
+                            <ActivityIndicator size="small" color={colors.roleText} style={{ marginLeft: 8 }} />
                         )}
                     </View>
                     <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Ionicons name="close" size={24} color="#333" />
+                        <Ionicons name="close" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -341,7 +382,7 @@ export default function LocationPickerModal({
                                     style={styles.searchResultItem}
                                     onPress={() => selectSearchResult(result)}
                                 >
-                                    <Ionicons name="location-outline" size={20} color="#2A6E3F" />
+                                    <Ionicons name="location-outline" size={20} color={colors.roleText} />
                                     <View style={styles.searchResultTexts}>
                                         <Text style={styles.searchResultName}>{result.name}</Text>
                                         {result.description && (
@@ -357,23 +398,24 @@ export default function LocationPickerModal({
                 )}
 
                 {/* Карта */}
-                <LocationPickerMap
+                {visible && <LocationPickerMap
+                    onError={handleMapError}
                     ref={mapRef}
                     hasPermission={hasLocationPermission}
                     initialRegion={INITIAL_REGION}
                     coords={coords}
                     onMapPress={handleMapPress}
                     onCameraPositionChange={handleCameraPositionChanged}
-                />
+                />}
 
                 {/* Кнопки управления */}
                 <View style={styles.zoomControls}>
                     <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn} activeOpacity={0.7}>
-                        <Ionicons name="add" size={24} color="#333" />
+                        <Ionicons name="add" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <View style={styles.zoomDivider} />
                     <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut} activeOpacity={0.7}>
-                        <Ionicons name="remove" size={24} color="#333" />
+                        <Ionicons name="remove" size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -384,9 +426,9 @@ export default function LocationPickerModal({
                     disabled={isLoading}
                 >
                     {isLoading ? (
-                        <ActivityIndicator size="small" color="#333" />
+                        <ActivityIndicator size="small" color={colors.text} />
                     ) : (
-                        <Ionicons name="locate" size={24} color="#333" />
+                        <Ionicons name="locate" size={24} color={colors.text} />
                     )}
                 </TouchableOpacity>
 
@@ -394,7 +436,7 @@ export default function LocationPickerModal({
                 {coords && (
                     <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + 10 }]}>
                         <View style={styles.selectedLocationInfo}>
-                            <Ionicons name="location" size={20} color="#2A6E3F" />
+                            <Ionicons name="location" size={20} color={colors.roleText} />
                             <Text style={styles.selectedLocationText} numberOfLines={2}>
                                 {location || "Выберите место на карте"}
                             </Text>
@@ -410,10 +452,19 @@ export default function LocationPickerModal({
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
+    manualHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1 },
+    manualTitle: { fontSize: 18, fontWeight: '600' },
+    manualClose: { padding: 10, borderRadius: 12 },
+    manualContent: { padding: 20, width: '100%', maxWidth: 640, alignSelf: 'center' },
+    manualCard: { padding: 20, borderRadius: 20 },
+    manualHint: { fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 24 },
+    manualLabel: { fontSize: 12, marginBottom: 8 },
+    manualInput: { minHeight: 100, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 22 },
+    manualFooter: { padding: 20, borderTopWidth: 1 },
     mapModalContainer: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
     },
     mapHeader: {
         position: 'absolute',
@@ -431,9 +482,9 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         borderRadius: 10,
         paddingHorizontal: 12,
         marginRight: 12,
@@ -445,15 +496,15 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
         padding: 0,
     },
     closeButton: {
         width: 44,
         height: 44,
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
@@ -464,10 +515,10 @@ const styles = StyleSheet.create({
         left: 16,
         right: 16,
         zIndex: 11,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         maxHeight: 300,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -480,7 +531,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.divider,
     },
     searchResultTexts: {
         flex: 1,
@@ -488,12 +539,12 @@ const styles = StyleSheet.create({
     },
     searchResultName: {
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
         fontWeight: '600',
     },
     searchResultDescription: {
         fontSize: 13,
-        color: '#666',
+        color: colors.subtext,
         marginTop: 2,
     },
     map: {
@@ -509,9 +560,9 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
         borderWidth: 3,
-        borderColor: '#fff',
+        borderColor: colors.card,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
@@ -522,10 +573,10 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: 16,
         bottom: "55%",
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -541,7 +592,7 @@ const styles = StyleSheet.create({
     },
     zoomDivider: {
         height: 1,
-        backgroundColor: '#ddd',
+        backgroundColor: colors.divider,
     },
     myLocationButton: {
         position: 'absolute',
@@ -549,9 +600,9 @@ const styles = StyleSheet.create({
         bottom: "40%",
         width: 44,
         height: 44,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
@@ -570,12 +621,12 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         borderBottomWidth: 0,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
@@ -588,25 +639,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         borderRadius: 10,
         marginBottom: 16,
     },
     selectedLocationText: {
         flex: 1,
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
         marginLeft: 8,
     },
     confirmBtn: {
         padding: 16,
         borderRadius: 10,
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#0f6319',
+        borderColor: colors.primary,
     },
     confirmBtnText: {
         color: '#fff',

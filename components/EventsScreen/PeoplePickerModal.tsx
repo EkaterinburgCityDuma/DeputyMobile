@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     View,
     Text,
@@ -10,6 +10,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Building2 } from "lucide-react-native";
 import { BottomSheetModal as ModalBottomSheet } from "@/components/ui/BottomSheetModal/BottomSheetModal";
+
+import { useTheme } from '@/context/ThemeContext';
 
 type User = { id: string; full_name: string; email: string };
 type Department = { id: string; name: string };
@@ -35,6 +37,8 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
                                                                         onConfirm,
                                                                         mode = "both"
                                                                     }) => {
+    const { colors } = useTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<"users" | "departments">(
         mode === "departments" ? "departments" : "users"
@@ -121,7 +125,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
             >
                 <View style={styles.userInfo}>
                     <View style={styles.departmentIcon}>
-                        <Building2 size={22} color="#0f6319" />
+                        <Building2 size={22} color={colors.roleText} />
                     </View>
                     <View style={styles.userTextBlock}>
                         <Text style={styles.itemName}>{dept.name}</Text>
@@ -175,17 +179,17 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
             <View style={styles.content}>
                 {/* Поиск */}
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search-outline" size={20} color="#9ca3af" />
+                    <Ionicons name="search-outline" size={20} color={colors.subtext} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Поиск..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.subtext}
                     />
                     {searchQuery !== "" && (
                         <TouchableOpacity onPress={() => setSearchQuery("")}>
-                            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                            <Ionicons name="close-circle" size={20} color={colors.subtext} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -237,7 +241,7 @@ export const PeoplePickerModal: React.FC<PeoplePickerModalProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
     contentContainer: {
         paddingTop: 0,
     },
@@ -248,20 +252,20 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         marginHorizontal: 16,
         marginTop: 12,
         marginBottom: 12,
         paddingHorizontal: 12,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
     },
     searchInput: {
         flex: 1,
         marginLeft: 8,
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
         paddingVertical: 12,
     },
 
@@ -269,7 +273,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         marginHorizontal: 16,
         marginBottom: 12,
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         borderRadius: 10,
         padding: 4,
     },
@@ -283,7 +287,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     tabActive: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
@@ -292,15 +296,15 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 14,
-        color: '#6b7280',
+        color: colors.subtext,
         fontWeight: '500',
     },
     tabTextActive: {
-        color: '#0f6319',
+        color: colors.roleText,
         fontWeight: '600',
     },
     tabBadge: {
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
         borderRadius: 10,
         minWidth: 20,
         paddingHorizontal: 5,
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.divider,
     },
     userInfo: {
         flexDirection: 'row',
@@ -339,21 +343,21 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#e8f5e9',
+        backgroundColor: colors.roleBadge,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatarText: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#0f6319',
+        color: colors.roleText,
     },
 
     departmentIcon: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#e8f5e9',
+        backgroundColor: colors.roleBadge,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -361,11 +365,11 @@ const styles = StyleSheet.create({
     itemName: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#333',
+        color: colors.text,
     },
     itemEmail: {
         fontSize: 12,
-        color: '#9ca3af',
+        color: colors.subtext,
         marginTop: 2,
     },
 
@@ -374,19 +378,19 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 6,
         borderWidth: 2,
-        borderColor: '#d1d5db',
+        borderColor: colors.border,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 12,
     },
     checkboxChecked: {
-        backgroundColor: '#0f6319',
-        borderColor: '#0f6319',
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
 
     emptyText: {
         textAlign: 'center',
-        color: '#9ca3af',
+        color: colors.subtext,
         padding: 40,
     },
 
@@ -402,17 +406,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     clearButton: {
-        backgroundColor: '#f7f7f7',
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
     },
     clearButtonText: {
-        color: '#6b7280',
+        color: colors.subtext,
         fontSize: 16,
         fontWeight: '500',
     },
     confirmButton: {
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
     },
     confirmButtonText: {
         color: '#fff',

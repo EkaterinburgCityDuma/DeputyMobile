@@ -130,7 +130,7 @@ export function CreateEventScreen() {
         }
     };
 
-    const handleLocationSelected = (locationData: { address: string; coords: { lat: number; lon: number } }) => {
+    const handleLocationSelected = (locationData: { address: string; coords: { lat: number; lon: number } | null }) => {
         setLocation(locationData.address);
         setCoords(locationData.coords);
     };

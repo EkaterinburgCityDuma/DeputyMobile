@@ -8,6 +8,7 @@ interface MapProps {
     coords: { lat: number; lon: number } | null;
     onMapPress: (e: any) => void;
     onCameraPositionChange: (e: any) => void;
+    onError?: () => void;
 }
 
 export const LocationPickerMap = forwardRef<any, MapProps>((props, ref) => {

@@ -1,98 +1,88 @@
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
-
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { useTheme } from '@/context/ThemeContext';
 interface MapProps {
     hasPermission: boolean;
     initialRegion: any;
     coords: { lat: number; lon: number } | null;
     onMapPress: (e: any) => void;
     onCameraPositionChange: (e: any) => void;
+    onError?: () => void;
+}
+let apiPromise: Promise<any> | undefined;
+function loadMaps(apiKey: string) {
+    if (!apiPromise) {
+        apiPromise = new Promise<any>((resolve, reject) => {
+            const callback = `eventMapReady${Date.now()}`;
+            const errorCallback = `${callback}Error`;
+            const globals = window as any;
+            const script = document.createElement('script');
+            const cleanup = () => {
+                clearTimeout(timeout);
+                delete globals[callback];
+                delete globals[errorCallback];
+                script.onerror = null;
+            };
+            const fail = () => {
+                cleanup();
+                script.remove();
+                reject(new Error('Не удалось загрузить Яндекс Карты'));
+            };
+            const timeout = setTimeout(fail, 12000);
+            globals[callback] = (api: any) => {
+                try {
+                    api.ready(() => { cleanup(); resolve(api); });
+                } catch { fail(); }
+            };
+            globals[errorCallback] = fail;
+            script.onerror = fail;
+            const query = new URLSearchParams({ apikey: apiKey, lang: 'ru_RU', onload: callback, onerror: errorCallback, ns: 'eventMapsApi' });
+            script.src = `https://api-maps.yandex.ru/2.1/?${query}`;
+            script.async = true;
+            document.head.appendChild(script);
+        }).catch(error => { apiPromise = undefined; throw error; });
+    }
+    return apiPromise;
 }
 
 export const LocationPickerMap = forwardRef<any, MapProps>((props, ref) => {
+    const { colors } = useTheme();
+    const container = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
-
-    // Экспортируем метод setCenter, чтобы модалка могла управлять картой
-    useImperativeHandle(ref, () => ({
-        setCenter: (coords: { lat: number; lon: number }, zoom: number = 16) => {
-            if (mapRef.current) {
-                // В веб-версии Яндекса координаты передаются как [lat, lon]
-                mapRef.current.setCenter([coords.lat, coords.lon], zoom, {
-                    checkZoomRange: true,
-                    duration: 300, // Плавная анимация, как на мобилке
-                });
-            }
-        }
-    }));
-
-    // Обработка клика по карте
-    const handleMapClick = (e: any) => {
-        const coords = e.get('coords'); // Возвращает массив [lat, lon]
-        if (props.onMapPress) {
-            props.onMapPress({
-                nativeEvent: {
-                    lat: coords[0],
-                    lon: coords[1],
-                }
+    const markerRef = useRef<any>(null);
+    const propsRef = useRef(props);
+    propsRef.current = props;
+    useImperativeHandle(ref, () => ({ setCenter: (coords: { lat: number; lon: number }, zoom = 16) => {
+        // A cancelled camera animation does not mean the map is unavailable.
+        mapRef.current?.setCenter([coords.lat, coords.lon], zoom)?.catch(() => {});
+    } }), []);
+    useEffect(() => {
+        const apiKey = process.env.EXPO_PUBLIC_GEOCODER_API_KEY?.trim();
+        if (!apiKey) { propsRef.current.onError?.(); return; }
+        let disposed = false;
+        loadMaps(apiKey).then(api => {
+            if (disposed || !container.current) return;
+            const initial = propsRef.current.initialRegion;
+            const map = new api.Map(container.current, {
+                center: [initial?.lat ?? 56.837239, initial?.lon ?? 60.597887], zoom: initial?.zoom ?? 16,
+            }, { suppressMapOpenBlock: true, yandexMapDisablePoiInteractivity: true });
+            mapRef.current = map;
+            map.events.add('click', (event: any) => {
+                const [lat, lon] = event.get('coords');
+                propsRef.current.onMapPress({ nativeEvent: { lat, lon } });
             });
-        }
-    };
-
-    // Обработка перемещения/зума камеры (для синхронизации стейта в модалке)
-    const handleBoundsChange = () => {
-        if (props.onCameraPositionChange && mapRef.current) {
-            const center = mapRef.current.getCenter();
-            const zoom = mapRef.current.getZoom();
-            props.onCameraPositionChange({
-                nativeEvent: {
-                    point: { lat: center[0], lon: center[1] },
-                    zoom: zoom
-                }
+            map.events.add('boundschange', () => {
+                const [lat, lon] = map.getCenter();
+                propsRef.current.onCameraPositionChange({ nativeEvent: { point: { lat, lon }, zoom: map.getZoom() } });
             });
-        }
-    };
-
-    // Начальное состояние карты
-    const defaultState = {
-        center: props.initialRegion
-            ? [props.initialRegion.lat, props.initialRegion.lon]
-            : [56.837239, 60.597887], // Екатеринбург по умолчанию
-        zoom: props.initialRegion?.zoom || 16,
-    };
-
-    return (
-        <View style={styles.mapContainer}>
-            <YMaps query={{ apikey: process.env.EXPO_PUBLIC_GEOCODER_API_KEY }}>
-                <Map
-                    instanceRef={mapRef}
-                    defaultState={defaultState}
-                    width="100%"
-                    height="100%"
-                    options={{
-                        suppressMapOpenBlock: true,
-                        yandexMapDisablePoiInteractivity: true
-                    }}
-                    onClick={handleMapClick}
-                    onBoundsChange={handleBoundsChange}
-                >
-                    {props.coords && (
-                        <Placemark
-                            geometry={[props.coords.lat, props.coords.lon]}
-                            options={{
-                                preset: 'islands#darkGreenDotIcon',
-                            }}
-                        />
-                    )}
-                </Map>
-            </YMaps>
-        </View>
-    );
+            const coords = propsRef.current.coords;
+            markerRef.current = new api.Placemark(coords ? [coords.lat, coords.lon] : map.getCenter(), {}, { preset: 'islands#darkGreenDotIcon' });
+            map.geoObjects.add(markerRef.current);
+        }).catch(() => { if (!disposed) propsRef.current.onError?.(); });
+        return () => { disposed = true; mapRef.current?.destroy(); mapRef.current = null; };
+    }, []);
+    useEffect(() => {
+        if (props.coords) markerRef.current?.geometry.setCoordinates([props.coords.lat, props.coords.lon]);
+    }, [props.coords]);
+    return <div ref={container} style={{ flex: 1, backgroundColor: colors.background }} />;
 });
-
-const styles = StyleSheet.create({
-    mapContainer: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-    }
-});
+LocationPickerMap.displayName = 'LocationPickerMap';

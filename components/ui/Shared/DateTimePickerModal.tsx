@@ -11,6 +11,7 @@ import DateTimePicker from 'react-native-ui-datepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
 
 // Настройка dayjs на русский
 dayjs.locale('ru');
@@ -30,6 +31,8 @@ export default function DateTimePickerModal({
                                                 onCancel,
                                                 date,
                                             }: DateTimePickerModalProps) {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [selectedDate, setSelectedDate] = useState<Date>(date || new Date());
     const [pickerMode, setPickerMode] = useState<'date' | 'time'>(mode === 'time' ? 'time' : 'date');
     const [selectedHours, setSelectedHours] = useState<number>(date ? date.getHours() : new Date().getHours());
@@ -52,12 +55,12 @@ export default function DateTimePickerModal({
         if (isVisible) {
             setPickerMode(mode === 'time' ? 'time' : 'date');
         }
-    }, [isVisible, date]);
+    }, [isVisible, date, mode]);
 
     // Автопрокрутка к выбранному времени
     useEffect(() => {
         if (pickerMode === 'time' && isVisible) {
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
                 hoursScrollRef.current?.scrollTo({
                     y: selectedHours * 44,
                     animated: true
@@ -67,8 +70,9 @@ export default function DateTimePickerModal({
                     animated: true
                 });
             }, 100);
+            return () => clearTimeout(timeout);
         }
-    }, [pickerMode, isVisible]);
+    }, [pickerMode, isVisible, selectedHours, selectedMinutes]);
 
     const handleConfirm = () => {
         const finalDate = new Date(selectedDate);
@@ -92,23 +96,6 @@ export default function DateTimePickerModal({
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
 
-    // Кастомные локализованные тексты для календаря
-    const calendarLocale = {
-        months: [
-            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-        ],
-        monthsShort: [
-            'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-            'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
-        ],
-        weekDays: [
-            'Воскресенье', 'Понедельник', 'Вторник', 'Среда',
-            'Четверг', 'Пятница', 'Суббота'
-        ],
-        weekDaysShort: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-    };
-
     return (
         <Modal
             visible={isVisible}
@@ -121,7 +108,7 @@ export default function DateTimePickerModal({
                     {/* Header */}
                     <View style={styles.header}>
                         <TouchableOpacity onPress={onCancel} style={styles.headerButton}>
-                            <Ionicons name="close" size={24} color="#666" />
+                            <Ionicons name="close" size={24} color={colors.subtext} />
                         </TouchableOpacity>
                         <Text style={styles.title}>
                             {pickerMode === 'date' ? 'Выберите дату' : 'Выберите время'}
@@ -139,7 +126,7 @@ export default function DateTimePickerModal({
                                 <Ionicons
                                     name="calendar-outline"
                                     size={18}
-                                    color={pickerMode === 'date' ? '#0f6319' : '#999'}
+                                    color={pickerMode === 'date' ? colors.roleText : colors.subtext}
                                 />
                                 <Text style={[styles.tabText, pickerMode === 'date' && styles.tabTextActive]}>
                                     Дата
@@ -152,7 +139,7 @@ export default function DateTimePickerModal({
                                 <Ionicons
                                     name="time-outline"
                                     size={18}
-                                    color={pickerMode === 'time' ? '#0f6319' : '#999'}
+                                    color={pickerMode === 'time' ? colors.roleText : colors.subtext}
                                 />
                                 <Text style={[styles.tabText, pickerMode === 'time' && styles.tabTextActive]}>
                                     Время
@@ -169,15 +156,32 @@ export default function DateTimePickerModal({
                                     mode="single"
                                     date={selectedDate}
                                     onChange={handleDateChange}
-                                    selectedItemColor="#0f6319"
-                                    headerTextStyle={styles.calendarHeaderText}
-                                    weekDaysTextStyle={styles.weekDayText}
-                                    calendarTextStyle={styles.calendarText}
-                                    todayContainerStyle={styles.todayContainer}
-                                    todayTextStyle={styles.todayText}
-                                    buttonPrevIcon={<Ionicons name="chevron-back" size={24} color="#0f6319" />}
-                                    buttonNextIcon={<Ionicons name="chevron-forward" size={24} color="#0f6319" />}
-                                    locale={calendarLocale}
+                                    locale="ru"
+                                    firstDayOfWeek={1}
+                                    components={{
+                                        IconPrev: <Ionicons name="chevron-back" size={22} color={colors.roleText} />,
+                                        IconNext: <Ionicons name="chevron-forward" size={22} color={colors.roleText} />,
+                                    }}
+                                    styles={{
+                                        day_label: styles.calendarText,
+                                        weekday_label: styles.weekDayText,
+                                        month_selector_label: styles.calendarHeaderText,
+                                        year_selector_label: styles.calendarHeaderText,
+                                        month_label: styles.calendarText,
+                                        year_label: styles.calendarText,
+                                        today: { borderColor: colors.roleText, borderWidth: 1, borderRadius: 10 },
+                                        today_label: { color: colors.roleText },
+                                        selected: { backgroundColor: colors.primary, borderRadius: 10 },
+                                        selected_label: { color: '#fff', fontWeight: '600' },
+                                        selected_month: { backgroundColor: colors.primary, borderRadius: 10 },
+                                        selected_month_label: { color: '#fff' },
+                                        selected_year: { backgroundColor: colors.primary, borderRadius: 10 },
+                                        selected_year_label: { color: '#fff' },
+                                        active_year: { backgroundColor: colors.roleBadge, borderRadius: 10 },
+                                        active_year_label: { color: colors.roleText },
+                                        outside_label: { color: colors.subtext, opacity: 0.5 },
+                                        disabled_label: { color: colors.subtext, opacity: 0.4 },
+                                    }}
                                 />
                             </View>
                         ) : (
@@ -217,8 +221,8 @@ export default function DateTimePickerModal({
                                                 <View style={{ height: 80 }} />
                                             </ScrollView>
                                             {/* Градиентные затемнения сверху и снизу */}
-                                            <View style={styles.scrollFadeTop} />
-                                            <View style={styles.scrollFadeBottom} />
+                                            <View pointerEvents="none" style={styles.scrollFadeTop} />
+                                            <View pointerEvents="none" style={styles.scrollFadeBottom} />
                                         </View>
                                     </View>
 
@@ -255,8 +259,8 @@ export default function DateTimePickerModal({
                                                 ))}
                                                 <View style={{ height: 80 }} />
                                             </ScrollView>
-                                            <View style={styles.scrollFadeTop} />
-                                            <View style={styles.scrollFadeBottom} />
+                                            <View pointerEvents="none" style={styles.scrollFadeTop} />
+                                            <View pointerEvents="none" style={styles.scrollFadeBottom} />
                                         </View>
                                     </View>
                                 </View>
@@ -267,7 +271,7 @@ export default function DateTimePickerModal({
                     {/* Selected Date Display */}
                     {pickerMode === 'time' && (
                         <View style={styles.selectedDateDisplay}>
-                            <Ionicons name="calendar-outline" size={16} color="#666" />
+                            <Ionicons name="calendar-outline" size={16} color={colors.subtext} />
                             <Text style={styles.selectedDateText}>
                                 {dayjs(selectedDate).locale('ru').format('DD MMMM YYYY')}
                             </Text>
@@ -295,7 +299,7 @@ export default function DateTimePickerModal({
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     container: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 20,
         width: '100%',
         maxWidth: 400,
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
         paddingTop: 20,
         paddingBottom: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.divider,
     },
     headerButton: {
         width: 40,
@@ -334,7 +338,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 17,
         fontWeight: '600',
-        color: '#333',
+        color: colors.text,
     },
     tabContainer: {
         flexDirection: 'row',
@@ -350,19 +354,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 10,
         borderRadius: 10,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.background,
         gap: 6,
     },
     tabActive: {
-        backgroundColor: '#e8f5e9',
+        backgroundColor: colors.roleBadge,
     },
     tabText: {
         fontSize: 14,
-        color: '#999',
+        color: colors.subtext,
         fontWeight: '500',
     },
     tabTextActive: {
-        color: '#0f6319',
+        color: colors.roleText,
         fontWeight: '600',
     },
     content: {
@@ -375,23 +379,23 @@ const styles = StyleSheet.create({
     calendarHeaderText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        color: colors.text,
     },
     weekDayText: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#999',
+        color: colors.subtext,
     },
     calendarText: {
         fontSize: 15,
-        color: '#333',
+        color: colors.text,
     },
     todayContainer: {
-        backgroundColor: '#e8f5e9',
+        backgroundColor: colors.roleBadge,
         borderRadius: 8,
     },
     todayText: {
-        color: '#0f6319',
+        color: colors.primary,
         fontWeight: '600',
     },
     timePickerWrapper: {
@@ -410,7 +414,7 @@ const styles = StyleSheet.create({
     },
     timeColumnTitle: {
         fontSize: 12,
-        color: '#999',
+        color: colors.subtext,
         marginBottom: 8,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -433,11 +437,11 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     timeItemSelected: {
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
     },
     timeItemText: {
         fontSize: 20,
-        color: '#333',
+        color: colors.text,
         fontWeight: '500',
     },
     timeItemTextSelected: {
@@ -447,7 +451,7 @@ const styles = StyleSheet.create({
     timeSeparator: {
         fontSize: 24,
         fontWeight: '300',
-        color: '#333',
+        color: colors.text,
         marginHorizontal: 10,
         marginBottom: 20,
     },
@@ -457,7 +461,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 30,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: colors.card + 'E6',
     },
     scrollFadeBottom: {
         position: 'absolute',
@@ -465,7 +469,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 30,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: colors.card + 'E6',
     },
     selectedDateDisplay: {
         flexDirection: 'row',
@@ -473,13 +477,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 10,
         gap: 6,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: colors.background,
         marginHorizontal: 20,
         borderRadius: 8,
     },
     selectedDateText: {
         fontSize: 14,
-        color: '#666',
+        color: colors.subtext,
     },
     footer: {
         flexDirection: 'row',
@@ -487,25 +491,25 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         gap: 10,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        borderTopColor: colors.divider,
     },
     cancelButton: {
         flex: 1,
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.background,
         alignItems: 'center',
     },
     cancelButtonText: {
         fontSize: 16,
-        color: '#666',
+        color: colors.subtext,
         fontWeight: '500',
     },
     confirmButton: {
         flex: 1,
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: '#0f6319',
+        backgroundColor: colors.primary,
         alignItems: 'center',
     },
     confirmButtonText: {

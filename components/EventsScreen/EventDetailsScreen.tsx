@@ -371,13 +371,15 @@ export const EventDetailsScreen: React.FC = () => {
 
     const parseLocation = (locationString: string) => {
         if (!locationString) return { address: '', coordinates: null };
-        const parts = locationString.split('|');
-        if (parts.length === 2) {
-            const [address, coords] = parts;
-            const [lat, lon] = coords.split(',').map(Number);
-            return { address: address.trim(), coordinates: { lat, lon } };
+        const match = locationString.match(/^([^|]+)\|\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*$/);
+        if (match) {
+            const lat = Number(match[2]);
+            const lon = Number(match[3]);
+            if (match[1].trim() && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                return { address: match[1].trim(), coordinates: { lat, lon } };
+            }
         }
-        return { address: locationString, coordinates: null };
+        return { address: locationString.trim(), coordinates: null };
     };
 
     const location = parseLocation(event?.location || '');
@@ -569,15 +571,15 @@ export const EventDetailsScreen: React.FC = () => {
                         </View>
                     </View>
 
-                    {location.coordinates && (
+                    {!!location.address && (
                         <View style={[styles.card, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Место проведения</Text>
                             <Text style={[styles.addressText, { color: colors.subtext }]}>{location.address}</Text>
-                            <TouchableOpacity onPress={openMaps} activeOpacity={0.9}>
+                            {location.coordinates && <TouchableOpacity onPress={openMaps} activeOpacity={0.9}>
                                 <View style={styles.mapContainer}>
-                                    <EventMap coordinates={location.coordinates} />
+                                    <EventMap key={event.location} coordinates={location.coordinates} />
                                 </View>
-                            </TouchableOpacity>
+                            </TouchableOpacity>}
                         </View>
                     )}
 
