@@ -22,11 +22,18 @@ import { useTheme } from '@/context/ThemeContext';
 
 import { useUsersStore } from '@/store/useUsersStore';
 import {SkeletonLoader} from "@/components/ui/Shared/SkeletonLoader";
+import { AuthManager } from '@/api/auth';
 
 const UsersListScreen = () => {
     const { colors, isDark } = useTheme();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [currentRole, setCurrentRole] = useState(() => AuthManager.getRole());
+    const canCreateUser = currentRole === 'Admin';
+
+    useEffect(() => {
+        return AuthManager.addListener(() => setCurrentRole(AuthManager.getRole()));
+    }, []);
 
     const { users, isLoading: loading, fetchUsers } = useUsersStore();
     const [filteredUsers, setFilteredUsers] = useState<Profile[]>([]);
@@ -85,14 +92,14 @@ const UsersListScreen = () => {
                         {loading ? 'Загрузка...' : `${filteredUsers.length} ${declOfNum(filteredUsers.length, ['человек', 'человека', 'человек'])}`}
                     </Text>
                 </View>
-                <TouchableOpacity
+                {canCreateUser && <TouchableOpacity
                     style={styles.newTaskButton}
                     onPress={() => router.push('/(screens)/UsersScreen/CreateUserScreen')}
                 >
                     <View pointerEvents={"none"}>
                         <Plus size={20} color="white" />
                     </View>
-                </TouchableOpacity>
+                </TouchableOpacity>}
             </LinearGradient>
 
             <Search
