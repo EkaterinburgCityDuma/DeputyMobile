@@ -43,7 +43,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     height: 100%;
                     overflow: hidden;
                     overscroll-behavior: none;
-                    touch-action: none;
+                    touch-action: manipulation;
                     background-color: #ffffff;
                     -webkit-tap-highlight-color: transparent;
                 }

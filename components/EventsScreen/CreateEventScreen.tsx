@@ -360,7 +360,7 @@ export function CreateEventScreen() {
                         style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         value={title}
                         onChangeText={setTitle}
-                        accessibilityLabel="Название" placeholder="Название *"
+                        accessibilityLabel="Название" placeholder="Название события"
                         placeholderTextColor={colors.subtext}
                     />
 
@@ -371,7 +371,7 @@ export function CreateEventScreen() {
                         numberOfLines={8}
                         value={description}
                         onChangeText={setDescription}
-                        accessibilityLabel="Описание" placeholder="Описание *"
+                        accessibilityLabel="Описание" placeholder="Детали мероприятия"
                         placeholderTextColor={colors.subtext}
                         textAlignVertical="top"
                     />
@@ -445,7 +445,7 @@ export function CreateEventScreen() {
 
                     {isAdmin && (
                         <MotionPressable
-                            style={[styles.checkboxContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+                            accessibilityRole="checkbox" accessibilityLabel="Публичное мероприятие" accessibilityState={{ checked: isPublic }} style={[styles.checkboxContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
                             onPress={() => {
                                 setIsPublic(!isPublic);
                                 if (!isPublic) {

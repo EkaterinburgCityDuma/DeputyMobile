@@ -245,9 +245,9 @@ const CreateUserScreen = () => {
                 <View style={styles.card}>
                     {/* ФИО, Email, Должность */}
                     <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>ФИО *</Text>
-                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={fullName} onChangeText={setFullName} accessibilityLabel="ФИО" placeholder="ФИО *" placeholderTextColor={colors.subtext} />
+                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={fullName} onChangeText={setFullName} accessibilityLabel="ФИО" placeholder="Фамилия Имя Отчество" placeholderTextColor={colors.subtext} />
                     <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Электронная почта *</Text>
-                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={email} onChangeText={setEmail} accessibilityLabel="Email" placeholder="Email *" placeholderTextColor={colors.subtext} />
+                    <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={email} onChangeText={setEmail} accessibilityLabel="Email" placeholder="name@example.ru" keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholderTextColor={colors.subtext} />
                     <Text style={{ color: colors.subtext, fontSize: 13, fontWeight: '600', marginTop: 12 }}>Должность</Text>
                     <TextInput style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} value={jobTitle} onChangeText={setJobTitle} accessibilityLabel="Должность" placeholder="Должность" placeholderTextColor={colors.subtext} />
 

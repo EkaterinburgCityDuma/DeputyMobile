@@ -30,7 +30,7 @@ import {SkeletonItem} from "@/components/ui/Shared/SkeletonLoader";
 
 export function Dashboard() {
     const insets = useSafeAreaInsets();
-    const {colors, isDark} = useTheme();
+    const {colors} = useTheme();
 
     const {data, isLoading, error, fetchDashboardData} = useDashboardStore();
     const [refreshing, setRefreshing] = useState(false);

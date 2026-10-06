@@ -151,7 +151,7 @@ export function TaskForm() {
                         style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                         value={title}
                         onChangeText={setTitle}
-                        accessibilityLabel="Название" placeholder="Название *"
+                        accessibilityLabel="Название" placeholder="Что нужно сделать"
                         placeholderTextColor={colors.subtext}
                     />
 
@@ -162,7 +162,7 @@ export function TaskForm() {
                         numberOfLines={8}
                         value={description}
                         onChangeText={setDescription}
-                        accessibilityLabel="Описание" placeholder="Описание *"
+                        accessibilityLabel="Описание" placeholder="Детали и ожидаемый результат"
                         placeholderTextColor={colors.subtext}
                         textAlignVertical="top"
                     />

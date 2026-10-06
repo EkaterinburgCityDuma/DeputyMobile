@@ -26,7 +26,7 @@ export interface PhonebookModel {
 }
 
 export const PhonebookScreen = () => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
 

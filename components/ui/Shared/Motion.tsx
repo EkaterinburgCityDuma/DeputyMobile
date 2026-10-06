@@ -8,6 +8,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function MotionPressable({ style, onPressIn, onPressOut, onHoverIn, onHoverOut, disabled, ...props }: PressableProps) {
     const reducedMotion = useReducedMotion();
     const [pressed, setPressed] = React.useState(false);
+    const [hovered, setHovered] = React.useState(false);
     const scale = useSharedValue(1);
     const hover = useSharedValue(0);
     const animatedStyle = useAnimatedStyle(() => ({
@@ -21,7 +22,11 @@ export function MotionPressable({ style, onPressIn, onPressOut, onHoverIn, onHov
             disabled={disabled}
             accessibilityRole={props.accessibilityRole ?? 'button'}
             accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
-            style={[typeof style === 'function' ? style({ pressed }) : style, animatedStyle]}
+            aria-selected={props['aria-selected'] ?? props.accessibilityState?.selected}
+            aria-checked={props['aria-checked'] ?? props.accessibilityState?.checked}
+            aria-expanded={props['aria-expanded'] ?? props.accessibilityState?.expanded}
+            aria-disabled={props['aria-disabled'] ?? !!disabled}
+            style={[typeof style === 'function' ? style({ pressed, hovered }) : style, animatedStyle]}
             onPressIn={event => {
                 if (typeof style === 'function') setPressed(true);
                 if (!reducedMotion) scale.value = withTiming(0.98, { duration: 100 });
@@ -33,10 +38,12 @@ export function MotionPressable({ style, onPressIn, onPressOut, onHoverIn, onHov
                 onPressOut?.(event);
             }}
             onHoverIn={event => {
+                if (typeof style === 'function') setHovered(true);
                 hover.value = withTiming(1, { duration: reducedMotion ? 0 : 140 });
                 onHoverIn?.(event);
             }}
             onHoverOut={event => {
+                if (typeof style === 'function') setHovered(false);
                 hover.value = withTiming(0, { duration: reducedMotion ? 0 : 140 });
                 onHoverOut?.(event);
             }}
