@@ -2,7 +2,7 @@ import { CatalogItem, catalogService } from '@/api/catalogService';
 import { Document, documentService } from '@/api/documentService';
 import * as DocumentPicker from 'expo-document-picker';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import {JSX, useMemo, useRef, useState} from 'react';
+import {JSX, useMemo, useRef, useState, useEffect} from 'react';
 import {AuthManager} from "@/api/auth";
 import * as FileSystem from 'expo-file-system/legacy';
 import {apiUrl} from "@/api/api";
@@ -10,6 +10,7 @@ import {xAppSecret} from "@/api/auth";
 import Toast from "react-native-toast-message";
 import * as Sharing from 'expo-sharing';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {Alert, Platform} from "react-native";
 
 export interface FileManagerState {
@@ -63,7 +64,22 @@ export interface FileManagerComputed {
 
 import { useFileManagerStore } from '@/store/useFileManagerStore';
 
+// Функция для построения плоской карты каталогов для быстрого поиска
+const buildCatalogMap = (catalogs: CatalogItem[], map: Map<string, CatalogItem> = new Map()): Map<string, CatalogItem> => {
+    catalogs.forEach(catalog => {
+        map.set(catalog.id, catalog);
+        if (catalog.children && catalog.children.length > 0) {
+            buildCatalogMap(catalog.children, map);
+        }
+    });
+    return map;
+};
+
 export const useFileManagerPresenter = () => {
+    const router = useRouter();
+    const params = useLocalSearchParams<{ catalogType?: string; catalogPath?: string }>();
+    const catalogType = typeof params.catalogType === 'string' ? params.catalogType : '';
+    const catalogPath = typeof params.catalogPath === 'string' ? params.catalogPath : '[]';
     const {
         rootCatalogs,
         documentsCache,
@@ -96,147 +112,69 @@ export const useFileManagerPresenter = () => {
     const xhrRef = useRef<XMLHttpRequest | null>(null);
     const [uploadError, setUploadError] = useState(null);
 
-    // Функция для построения плоской карты каталогов для быстрого поиска
-    const buildCatalogMap = (catalogs: CatalogItem[], map: Map<string, CatalogItem> = new Map()): Map<string, CatalogItem> => {
-        catalogs.forEach(catalog => {
-            map.set(catalog.id, catalog);
-            if (catalog.children && catalog.children.length > 0) {
-                buildCatalogMap(catalog.children, map);
-            }
-        });
-        return map;
-    };
-
-    const handleOpenCatalog = async (type: 'public' | 'mine' | 'deputy', label: string) => {
+    useEffect(() => {
+        let cancelled = false;
+        if (!catalogType) return;
         setLoading(true);
         setError(null);
-        setDocuments([]);
-        try {
+        const restoreCatalog = async () => {
+            if (!['public', 'mine', 'deputy'].includes(catalogType)) throw new Error('Неизвестный раздел каталога');
+            const ids: unknown = JSON.parse(catalogPath);
+            if (!Array.isArray(ids) || !ids.every(id => typeof id === 'string')) throw new Error('Некорректный путь каталога');
+            const type = catalogType as 'public' | 'mine' | 'deputy';
+            const label = type === 'mine' ? 'Личный' : type === 'deputy' ? 'Каталог депутата' : 'Общий';
             const catalogs = await fetchRootCatalogs(type);
-
-            if (catalogs.length > 0) {
-                const rootCatalog: CatalogItem = {
-                    id: `root-${type}`,
-                    name: label,
-                    parent_catalog_id: null,
-                    type: 'catalog',
-                    children: catalogs,
-                };
-                setCurrentRootCatalog(rootCatalog);
-                const hierarchy = buildCatalogMap([rootCatalog]);
-                setCatalogHierarchy(hierarchy);
-
-                setCurrentCatalog(rootCatalog);
-                setCurrentCatalogLabel(label);
-                setBreadcrumbPath([{ id: rootCatalog.id, name: label }]);
-            } else {
-                const emptyRoot: CatalogItem = { id: 'empty', name: label, parent_catalog_id: null, type: 'catalog' };
-                setCurrentRootCatalog(emptyRoot);
-                setCatalogHierarchy(new Map());
-
-                setCurrentCatalog(emptyRoot);
-                setCurrentCatalogLabel(label);
-                setBreadcrumbPath([{ id: 'empty', name: label }]);
+            const root: CatalogItem = { id: catalogs.length ? `root-${type}` : 'empty', name: label, parent_catalog_id: null, type: 'catalog', children: catalogs };
+            let selected = root;
+            const path = [{ id: root.id, name: label }];
+            for (const id of ids) {
+                const next = selected.children?.find(child => child.id === id);
+                if (!next) throw new Error('Каталог не найден');
+                selected = next;
+                path.push({ id: selected.id, name: selected.name });
             }
-        } catch (error: any) {
-            setError(error?.message || 'Не удалось загрузить каталог');
-            setCurrentCatalog(null);
-            setCurrentCatalogLabel('');
-        } finally {
-            setLoading(false);
-        }
+            const docs = ids.length ? await fetchDocuments(selected.id) : [];
+            if (cancelled) return;
+            setCurrentRootCatalog(root);
+            setCatalogHierarchy(buildCatalogMap([root]));
+            setCurrentCatalog(selected);
+            setCurrentCatalogLabel(label);
+            setBreadcrumbPath(path);
+            setDocuments(docs);
+            setSearchQuery('');
+        };
+        restoreCatalog().catch(error => {
+            if (!cancelled) setError(error instanceof Error ? error.message : 'Не удалось загрузить каталог');
+        }).finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, [catalogType, catalogPath, fetchRootCatalogs, fetchDocuments]);
+
+    const navigateToCatalog = (type: string, ids: string[]) => {
+        router.push({ pathname: '/(screens)/CatalogScreen', params: { catalogType: type, catalogPath: JSON.stringify(ids) } });
+    };
+
+    const handleOpenCatalog = async (type: 'public' | 'mine' | 'deputy', _label: string) => {
+        navigateToCatalog(type, []);
     };
 
     const handleGoBack = () => {
-        setCurrentCatalog(null);
-        setCurrentCatalogLabel('');
-        setSearchQuery('');
-        setError(null);
-        setDocuments([]);
-        setBreadcrumbPath([]);
-        setCurrentRootCatalog(null);
-        setCatalogHierarchy(new Map());
+        if (router.canGoBack()) router.back();
+        else if (breadcrumbPath.length > 1) {
+            navigateToCatalog(catalogType, breadcrumbPath.slice(1, -1).map(item => item.id));
+        } else router.replace('/(screens)/CatalogScreen');
     };
 
     const handleBreadcrumbClick = async (index: number) => {
         if (index === -1) {
-            handleGoBack();
-            return;
-        }
-
-        const selectedPath = breadcrumbPath[index];
-
-        if (selectedPath.id.startsWith('root-')) {
-            let catalogType: 'public' | 'mine' | 'deputy' = 'public';
-            if (selectedPath.id === 'root-public') catalogType = 'public';
-            else if (selectedPath.id === 'root-mine') catalogType = 'mine';
-            else if (selectedPath.id === 'root-deputy') catalogType = 'deputy';
-
-            await handleOpenCatalog(catalogType, selectedPath.name);
-            return;
-        }
-
-        const catalogInHierarchy = catalogHierarchy.get(selectedPath.id);
-
-        if (catalogInHierarchy) {
-            if (catalogInHierarchy.children && catalogInHierarchy.children.length > 0) {
-                const newPath = breadcrumbPath.slice(0, index + 1);
-                setBreadcrumbPath(newPath);
-                setCurrentCatalog(catalogInHierarchy);
-                setLoading(true);
-                try {
-                    const cachedDocs = await fetchDocuments(catalogInHierarchy.id);
-                    setDocuments(cachedDocs);
-                } catch (err: any) {
-                    console.error('[FileManager] Ошибка при загрузке документов:', err);
-                    setError(err?.message || 'Не удалось загрузить документы');
-                    setDocuments([]);
-                } finally {
-                    setLoading(false);
-                }
-                return;
-            }
-        }
-
-        const newPath = breadcrumbPath.slice(0, index + 1);
-        setBreadcrumbPath(newPath);
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const docs = await fetchDocuments(selectedPath.id);
-            setDocuments(docs);
-            setCurrentCatalog({
-                id: selectedPath.id,
-                name: selectedPath.name,
-                parent_catalog_id: null,
-                type: 'catalog',
-            });
-        } catch (err: any) {
-            console.error('[FileManager] Ошибка при переходе:', err);
-            setError(err?.message || 'Не удалось загрузить каталог');
-        } finally {
-            setLoading(false);
+            router.push('/(screens)/CatalogScreen');
+        } else if (index < breadcrumbPath.length - 1) {
+            navigateToCatalog(catalogType, breadcrumbPath.slice(1, index + 1).map(item => item.id));
         }
     };
 
     const handleOpenChildCatalog = async (catalog: CatalogItem) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const docs = await fetchDocuments(catalog.id);
-            setDocuments(docs);
-            setCurrentCatalog(catalog);
-            setBreadcrumbPath([...breadcrumbPath, { id: catalog.id, name: catalog.name }]);
-        } catch (err: any) {
-            setError(err?.message || 'Не удалось загрузить документы');
-            setDocuments([]);
-        } finally {
-            setLoading(false);
-        }
+        navigateToCatalog(catalogType, [...breadcrumbPath.slice(1).map(item => item.id), catalog.id]);
     };
-
     const handleOpenCreateModal = () => {
         setCatalogName('');
         setCreateError(null);

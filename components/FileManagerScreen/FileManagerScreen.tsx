@@ -4,6 +4,7 @@ import { SkeletonLoader } from '@/components/ui/Shared/SkeletonLoader';
 import { LinearGradient } from "expo-linear-gradient";
 import {
     AlertCircle,
+    ArrowLeft,
     Folder,
     FolderPlus,
     Home,
@@ -85,6 +86,14 @@ export function FileManager() {
                     </Text>
                 </View>
                 <View style={styles.headerButtonsContainer}>
+                    {state.currentCatalog && <TouchableOpacity
+                        style={styles.headerButton}
+                        onPress={handlers.handleGoBack}
+                        accessibilityRole="button"
+                        accessibilityLabel="Назад к предыдущему каталогу"
+                    >
+                        <ArrowLeft size={24} color="#ffffff" />
+                    </TouchableOpacity>}
                     {showCreateCatalogButton && (
                         <TouchableOpacity
                             style={styles.headerButton}
