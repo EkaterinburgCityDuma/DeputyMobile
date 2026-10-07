@@ -25,11 +25,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     box-sizing: border-box;
                     overflow: hidden;
                     
-                    /* Заполняем safe areas со всех сторон */
-                    padding: env(safe-area-inset-top) 
-                             env(safe-area-inset-right) 
-                             env(safe-area-inset-bottom) 
-                             env(safe-area-inset-left);
+                    /* Safe area учитывается внутри экранов через SafeAreaProvider. */
+                    margin: 0;
+                    padding: 0;
                     
                     background-color: #ffffff;
                 }
