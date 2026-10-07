@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {AuthManager} from "@/api/auth";
 import {useRouter, usePathname} from 'expo-router';
 import {View} from "react-native";
+import { syncDeviceToken } from '@/api/fcmService.web';
 
 function useProtectedRoute(isAuthenticated: boolean | null) {
     const router = useRouter();
@@ -24,20 +25,9 @@ const AppWeb: React.FC = () => {
         const init = async () => {
             await AuthManager.loadTokensFromStorage();
             setIsAuthenticated(!!AuthManager.getToken());
+            syncDeviceToken().catch(console.error);
         };
         init();
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/pwa/service-worker.js')
-                    .then((registration) => {
-                        console.log('SW зарегистрирован:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('Ошибка SW:', error);
-                    });
-            });
-        }
 
         return AuthManager.addListener((token) => {
             setIsAuthenticated(!!token);
