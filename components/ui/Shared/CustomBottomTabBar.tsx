@@ -75,7 +75,7 @@ export function CustomBottomTabBar({ insets, role }: { insets: EdgeInsets; role:
     const segments = useSegments();
 
     return (
-        <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
+        <View nativeID="app-bottom-navigation" style={[styles.tabBarContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
             <BlurView
                 intensity={isDark ? 50 : 30}
                 tint={isDark ? "dark" : "light"}
@@ -115,8 +115,8 @@ export function CustomBottomTabBar({ insets, role }: { insets: EdgeInsets; role:
 
 const styles = StyleSheet.create({
     tabBarContainer: {
-        // На вебе используем fixed, чтобы он не уезжал при скролле контента
-        position: Platform.OS === "web" ? "fixed" : "absolute",
+        // Панель закреплена в контейнере приложения, вне прокручиваемого экрана.
+        position: "absolute",
         bottom: 0,
         left: 0, // Добавь это
         right: 0, // И это

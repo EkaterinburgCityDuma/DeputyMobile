@@ -24,6 +24,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     min-height: 100%;
                     box-sizing: border-box;
                     overflow: hidden;
+                    overscroll-behavior: none;
                     
                     /* Safe area учитывается внутри экранов через SafeAreaProvider. */
                     margin: 0;
@@ -55,6 +56,13 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     width: 100%;
                     height: 100%;
                     overflow: hidden;
+                    min-height: 0;
+                    overscroll-behavior: none;
+                }
+
+                /* Жест на панели не должен запускать прокрутку документа в iOS. */
+                #app-bottom-navigation {
+                    touch-action: none;
                 }
             
                 input, textarea, select {

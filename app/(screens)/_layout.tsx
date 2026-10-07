@@ -22,7 +22,7 @@ export default function AppLayout() {
     }, []);
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <Stack screenOptions={{ headerShown: false }} />
             <CustomBottomTabBar insets={insets} role={role} />
         </View>
