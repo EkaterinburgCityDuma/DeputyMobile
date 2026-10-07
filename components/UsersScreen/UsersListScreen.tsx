@@ -113,6 +113,7 @@ const UsersListScreen = () => {
 
             {loading && !refreshing ? (
                 <ScrollView
+                    style={styles.list}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
                     }
@@ -121,6 +122,7 @@ const UsersListScreen = () => {
                 </ScrollView>
             ) : (
                 <FlatList
+                    style={styles.list}
                     data={filteredUsers}
                     keyExtractor={(item) => item.id}
                     renderItem={renderUserItem}
@@ -174,6 +176,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: "auto"
     },
+    list: { flex: 1, minHeight: 0 },
     taskList: { padding: 15, paddingTop: 10 },
     userCard: {
         flexDirection: 'row',

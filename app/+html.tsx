@@ -19,8 +19,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
             <style dangerouslySetInnerHTML={{ __html: `
                 html {
-                    /* Ключевой фикс: минимальная высота = 100% + высота safe area сверху */
-                    min-height: calc(100% + env(safe-area-inset-top));
+                    /* Прокручиваются внутренние списки, а не документ за ними. */
+                    height: 100%;
+                    min-height: 100%;
+                    box-sizing: border-box;
+                    overflow: hidden;
                     
                     /* Заполняем safe areas со всех сторон */
                     padding: env(safe-area-inset-top) 
@@ -43,7 +46,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     height: 100%;
                     overflow: hidden;
                     overscroll-behavior: none;
-                    touch-action: none;
+                    touch-action: manipulation;
                     background-color: #ffffff;
                     -webkit-tap-highlight-color: transparent;
                 }
