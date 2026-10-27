@@ -10,8 +10,10 @@ import { useNavigation } from '@react-navigation/native';
 import {
     ArrowLeft,
     Bell,
+    BellOff,
     Calendar, ChevronRight,
     ClipboardList,
+    RefreshCw,
 } from 'lucide-react-native';
 import { styles } from './notifications-page';
 import { router } from 'expo-router';
@@ -74,8 +76,7 @@ export function Notifications() {
             const { data } = await apiClient.get('/api/Notify/my');
             setNotifications(data);
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || err.message || 'Не удалось загрузить уведомления';
-            setError(errorMessage);
+            setError('Проверьте подключение к интернету и попробуйте ещё раз.');
             console.error('Fetch Error:', err);
         } finally {
             setLoading(false);
@@ -198,10 +199,21 @@ export function Notifications() {
     );
 
     const renderError = () => (
-        <View style={styles.errorContainer}>
-            <Text style={[styles.errorText, { color: isDark ? '#f87171' : '#ef4444' }]}>{error}</Text>
-            <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={fetchNotifications}>
-                <Text style={styles.retryButtonText}>Повторить</Text>
+        <View style={[styles.errorContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.iconBox }]}>
+                <BellOff size={28} color={colors.subtext} />
+            </View>
+            <Text accessibilityRole="header" style={[styles.errorTitle, { color: colors.text }]}>
+                Не удалось загрузить уведомления
+            </Text>
+            <Text accessibilityLiveRegion="polite" style={[styles.errorText, { color: colors.subtext }]}>{error}</Text>
+            <TouchableOpacity
+                accessibilityRole="button"
+                style={[styles.retryButton, { backgroundColor: colors.roleBadge }]}
+                onPress={fetchNotifications}
+            >
+                <RefreshCw size={18} color={colors.roleText} />
+                <Text style={[styles.retryButtonText, { color: colors.roleText }]}>Попробовать снова</Text>
             </TouchableOpacity>
         </View>
     );
@@ -289,18 +301,16 @@ export function Notifications() {
                 {!!pushStatus && <Text accessibilityLiveRegion="polite" style={{ color: colors.text, marginTop: 8 }}>{pushStatus}</Text>}
             </View>}
             {/* Список уведомлений */}
-            {error ? renderError() : (
                 <FlatList
-                    data={filteredNotifications}
+                    data={error ? [] : filteredNotifications}
                     renderItem={renderNotificationItem}
                     keyExtractor={(item) => item.id}
-                    ListEmptyComponent={renderEmptyList}
-                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={error ? renderError : renderEmptyList}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: 125 + insets.bottom }]}
                     showsVerticalScrollIndicator={false}
                     refreshing={refreshing}
                     onRefresh={handleRefresh}
                 />
-            )}
         </View>
     );
 }
