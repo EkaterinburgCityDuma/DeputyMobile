@@ -4,7 +4,6 @@ import {
     Text,
     TouchableOpacity,
     FlatList,
-    Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -52,21 +51,6 @@ export function Notifications() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const insets = useSafeAreaInsets();
-    const [pushBusy, setPushBusy] = useState(false);
-    const [pushStatus, setPushStatus] = useState('');
-    const enablePush = async () => {
-        setPushBusy(true);
-        try {
-            // Ask within the user gesture, before loading the Firebase client.
-            if (typeof window === 'undefined' || !('Notification' in window)) throw new Error('Браузер не поддерживает уведомления');
-            if (await window.Notification.requestPermission() !== 'granted') throw new Error('Разрешите уведомления в настройках браузера');
-            const { syncDeviceToken } = await import('@/api/fcmService.web');
-            await syncDeviceToken();
-            setPushStatus('Push-уведомления включены');
-        } catch (error) {
-            setPushStatus(error instanceof Error ? error.message : 'Не удалось подключить уведомления');
-        } finally { setPushBusy(false); }
-    };
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -293,13 +277,6 @@ export function Notifications() {
             }
             />
 
-            {Platform.OS === 'web' && <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                <TouchableOpacity onPress={enablePush} disabled={pushBusy} accessibilityRole="button"
-                    style={{ padding: 12, borderRadius: 8, backgroundColor: colors.primary }}>
-                    <Text style={{ color: 'white', textAlign: 'center' }}>{pushBusy ? 'Подключение…' : 'Включить push-уведомления'}</Text>
-                </TouchableOpacity>
-                {!!pushStatus && <Text accessibilityLiveRegion="polite" style={{ color: colors.text, marginTop: 8 }}>{pushStatus}</Text>}
-            </View>}
             {/* Список уведомлений */}
                 <FlatList
                     data={error ? [] : filteredNotifications}

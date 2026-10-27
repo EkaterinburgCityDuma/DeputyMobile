@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     View,
     Text,
@@ -37,6 +37,9 @@ import { apiClient } from '@/api/api';
 import { TaskCommentComponent } from './TaskComment';
 import { CommentInput } from './CommentInput';
 import { useTheme } from '@/context/ThemeContext';
+import { useTaskDetailsStore } from "@/store/useTaskDetailsStore";
+import { useTaskStore } from '@/store/useTaskStore';
+import { useDashboardStore } from '@/store/useDashboardStore';
 
 interface TaskStatusServer {
     name: string;
@@ -81,7 +84,7 @@ export interface Task {
     [key: string]: any;
 }
 
-import { useTaskDetailsStore } from "@/store/useTaskDetailsStore";
+const COMPLETED_STATUS = 'Завершена';
 
 export function TaskDetail() {
     const { colors, isDark } = useTheme();
@@ -100,6 +103,7 @@ export function TaskDetail() {
     // Объединяем данные из стора и локальные изменения
     const task = localTask || taskFromStore || null;
     const loading = storeLoading && !task;
+    const isTaskCompleted = task?.status?.trim().toLowerCase() === COMPLETED_STATUS.toLowerCase();
 
     const [isAddUserModalVisible, setIsAddUserModalVisible] = useState(false);
     const [allUsers, setAllUsers] = useState<ApiUser[]>([]);
@@ -108,6 +112,7 @@ export function TaskDetail() {
     const [addingUserId, setAddingUserId] = useState<string | null>(null);
     const [removingUserId, setRemovingUserId] = useState<string | null>(null);
     const [isCompleting, setIsCompleting] = useState(false);
+    const completionInFlight = useRef(false);
 
     const [comments, setComments] = useState<TaskComment[]>([]);
     const [sendingComment, setSendingComment] = useState(false);
@@ -270,19 +275,20 @@ export function TaskDetail() {
         }
     };
 
-    const handleArchiveTask = () => {
-        const confirmMessage = 'Перенести задачу в архив?';
+    const handleCompleteTask = () => {
+        if (!task || isTaskCompleted || completionInFlight.current) return;
+        const confirmMessage = 'Завершить задачу?';
 
         if (Platform.OS === 'web') {
             if (window.confirm(confirmMessage)) {
-                performArchiveTask();
+                performCompleteTask();
             }
         } else {
             Alert.alert('Завершение задачи', confirmMessage, [
                 { text: 'Отмена', style: 'cancel' },
                 {
                     text: 'Завершить',
-                    onPress: () => performArchiveTask()
+                    onPress: () => performCompleteTask()
                 }
             ]);
         }
@@ -315,18 +321,44 @@ export function TaskDetail() {
         }
     };
 
-    const performArchiveTask = async () => {
+    const performCompleteTask = async () => {
+        if (!task || isTaskCompleted || completionInFlight.current) return;
+        const taskId = task.task_id;
+        const completedStatus = statuses.find(({ name }) =>
+            name.trim().toLowerCase() === COMPLETED_STATUS.toLowerCase()
+        )?.name || COMPLETED_STATUS;
+
+        completionInFlight.current = true;
         setIsCompleting(true);
         try {
-            await apiClient.post(`/api/task/set-tasks-archived-status/${task?.task_id}`, null, {
-                params: { archive: true },
-                headers: { 'accept': '*/*' }
+            await taskService.updateTask(taskId, {
+                title: task.title,
+                description: task.description,
+                expected_end_date: task.expected_end_date,
+                priority: task.priority,
+                status: completedStatus,
             });
 
-            Toast.show({ type: 'success', text1: 'Успешно', text2: 'Задача перенесена в архив' });
-            router.push("/(screens)/TaskBoardScreen");
+            setLocalTask({ ...task, status: completedStatus });
+            useTaskDetailsStore.setState((state) => ({
+                tasks: state.tasks[taskId]
+                    ? { ...state.tasks, [taskId]: { ...state.tasks[taskId], status: completedStatus } }
+                    : state.tasks,
+            }));
+            useTaskStore.setState((state) => ({
+                tasks: state.tasks.map((item) => item.task_id === taskId
+                    ? { ...item, status: completedStatus }
+                    : item),
+            }));
+            useDashboardStore.getState().fetchDashboardData(true).catch(console.error);
+
+            Toast.show({ type: 'success', text1: 'Успешно', text2: 'Задача завершена' });
+            router.dismissTo("/(screens)/TaskBoardScreen");
         } catch (error) {
+            console.error('Task completion failed:', error);
             Toast.show({ type: 'error', text1: 'Ошибка', text2: 'Не удалось завершить задачу' });
+        } finally {
+            completionInFlight.current = false;
             setIsCompleting(false);
         }
     };
@@ -725,10 +757,13 @@ export function TaskDetail() {
                         />
                     </View>
 
-                    {(userRole === "Admin" || userId === task.author_id) && (
+                    {(userRole === "Admin" || userId === task.author_id) && !isTaskCompleted && (
                         <TouchableOpacity
+                            accessibilityRole="button"
+                            accessibilityLabel="Завершить задачу"
+                            accessibilityState={{ disabled: isCompleting, busy: isCompleting }}
                             style={[styles.completeTaskBtn, { backgroundColor: colors.primary }]}
-                            onPress={handleArchiveTask}
+                            onPress={handleCompleteTask}
                             disabled={isCompleting}
                         >
                             {isCompleting ? (

@@ -44,9 +44,17 @@ async function getWebMessaging() {
     return getMessaging(app);
 }
 
+let permissionRequestPromise: Promise<boolean> | undefined;
 export async function requestUserPermission() {
     if (typeof Notification === 'undefined') throw new Error('Браузер не поддерживает уведомления');
-    return (await Notification.requestPermission()) === 'granted';
+    if (Notification.permission !== 'default') return Notification.permission === 'granted';
+    if (!permissionRequestPromise) {
+        // Call before any await so Safari keeps the user's activation.
+        permissionRequestPromise = Notification.requestPermission()
+            .then((permission) => permission === 'granted')
+            .finally(() => { permissionRequestPromise = undefined; });
+    }
+    return permissionRequestPromise;
 }
 
 export async function getFCMToken() {
@@ -71,21 +79,38 @@ export function syncDeviceToken() {
     return syncPromise;
 }
 
+let permissionPromptShown = false;
 // The root layout owns this listener so it survives navigation away from index.
-export function setupWebNotifications() {
+export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) => void) {
     let disposed = false;
+    let messagingReady = false;
     let unsubscribe: (() => void) | undefined;
     if ('serviceWorker' in navigator) registerServiceWorker().catch(console.error);
-    const sync = () => { syncDeviceToken().catch(console.error); };
+    const sync = () => {
+        if (disposed) return;
+        if (!AuthManager.getToken() || typeof Notification === 'undefined') {
+            onPermissionPrompt?.(false);
+            return;
+        }
+        if (Notification.permission !== 'default') onPermissionPrompt?.(false);
+        if (!messagingReady) return;
+        if (Notification.permission === 'default' && onPermissionPrompt && !permissionPromptShown) {
+            permissionPromptShown = true;
+            onPermissionPrompt(true);
+        }
+        if (Notification.permission === 'granted') syncDeviceToken().catch(console.error);
+    };
     const removeAuthListener = AuthManager.addListener((token) => {
         if (!token) {
+            onPermissionPrompt?.(false);
             // Invalidate the subscription even without a backend unregister endpoint.
             getWebMessaging().then(deleteToken).catch(console.error);
         }
         if (token) sync();
     });
-    getWebMessaging().then((messaging) => {
+    Promise.all([getWebMessaging(), AuthManager.loadTokensFromStorage()]).then(([messaging]) => {
         if (disposed) return;
+        messagingReady = true;
         unsubscribe = onMessage(messaging, (message) => {
             if (!AuthManager.getToken()) return;
             let headerTitle = message.notification?.title || 'Новое уведомление';
