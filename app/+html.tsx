@@ -19,16 +19,14 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
             <style dangerouslySetInnerHTML={{ __html: `
                 html {
-                    /* Прокручиваются внутренние списки, а не документ за ними. */
-                    height: 100%;
-                    min-height: 100%;
-                    box-sizing: border-box;
-                    overflow: hidden;
-                    overscroll-behavior: none;
+                    /* Ключевой фикс: минимальная высота = 100% + высота safe area сверху */
+                    min-height: calc(100% + env(safe-area-inset-top));
                     
-                    /* Safe area учитывается внутри экранов через SafeAreaProvider. */
-                    margin: 0;
-                    padding: 0;
+                    /* Заполняем safe areas со всех сторон */
+                    padding: env(safe-area-inset-top) 
+                             env(safe-area-inset-right) 
+                             env(safe-area-inset-bottom) 
+                             env(safe-area-inset-left);
                     
                     background-color: #ffffff;
                 }
@@ -45,7 +43,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     height: 100%;
                     overflow: hidden;
                     overscroll-behavior: none;
-                    touch-action: manipulation;
+                    touch-action: none;
                     background-color: #ffffff;
                     -webkit-tap-highlight-color: transparent;
                 }
@@ -56,13 +54,6 @@ export default function Root({ children }: { children: React.ReactNode }) {
                     width: 100%;
                     height: 100%;
                     overflow: hidden;
-                    min-height: 0;
-                    overscroll-behavior: none;
-                }
-
-                /* Жест на панели не должен запускать прокрутку документа в iOS. */
-                #app-bottom-navigation {
-                    touch-action: none;
                 }
             
                 input, textarea, select {
