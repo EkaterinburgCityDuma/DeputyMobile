@@ -230,7 +230,7 @@ export function Notifications() {
 
     if (loading) {
         return (
-            <View style={[styles.container, {paddingBottom: insets.bottom + 15, backgroundColor: colors.background}]}>
+            <View style={[styles.container, {backgroundColor: colors.background}]}>
                 <LinearGradient
                     colors={[colors.primary, colors.secondary]}
                     start={{ x: 0, y: 0 }}
@@ -306,7 +306,7 @@ export function Notifications() {
                     renderItem={renderNotificationItem}
                     keyExtractor={(item) => item.id}
                     ListEmptyComponent={error ? renderError : renderEmptyList}
-                    contentContainerStyle={[styles.listContent, { paddingBottom: 125 + insets.bottom }]}
+                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshing={refreshing}
                     onRefresh={handleRefresh}

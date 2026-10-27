@@ -151,7 +151,7 @@ const DepartmentsListScreen = () => {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 50 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <StatusBar barStyle="light-content" translucent />
 
             <LinearGradient

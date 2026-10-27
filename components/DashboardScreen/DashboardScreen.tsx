@@ -98,7 +98,7 @@ export function Dashboard() {
     }
     if (error || !data) {
         return (
-            <View style={{ flex: 1, paddingBottom: insets.bottom + 15, backgroundColor: colors.background }}>
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -154,7 +154,7 @@ export function Dashboard() {
     const displayTasks : Task[] = data.urgent_tasks || [];
 
     return (
-        <View style={{ flex: 1, paddingBottom: insets.bottom + 15, backgroundColor: colors.background }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <LinearGradient
                 colors={[colors.primary, colors.secondary]}
                 start={{ x: 0, y: 0 }}

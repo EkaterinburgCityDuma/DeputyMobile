@@ -248,7 +248,7 @@ const CreateUserScreen = () => {
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             <ScrollView
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >

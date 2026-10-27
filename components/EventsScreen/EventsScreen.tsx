@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
         textTransform: 'capitalize',
     },
     listContent: {
-        paddingBottom: 100,
+        paddingBottom: 20,
         paddingTop: 10,
     },
 });

@@ -103,7 +103,7 @@ export const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     listContent: {
-        paddingBottom: 125,
+        paddingBottom: 24,
 
     },
     notificationItem: {

@@ -114,7 +114,6 @@ export const styles = StyleSheet.create({
     },
     taskList: {
         padding: 16,
-        paddingBottom: 100,
     },
     taskCard: {
         backgroundColor: '#ffffff',

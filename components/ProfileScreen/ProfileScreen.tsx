@@ -149,10 +149,10 @@ export function ProfileScreen() {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 35 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+                contentContainerStyle={{ paddingBottom: 24 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}

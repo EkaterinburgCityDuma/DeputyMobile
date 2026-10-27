@@ -71,7 +71,7 @@ export function FileManager() {
     }, [state.currentCatalog, userRole, state.breadcrumbPath]);
 
     return (
-        <View style={[styles.container, {paddingBottom: insets.bottom + 50, backgroundColor: colors.background}]}>
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
             {/* Header */}
             <LinearGradient
                 colors={[colors.primary, colors.secondary]}

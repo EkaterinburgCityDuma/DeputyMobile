@@ -512,7 +512,7 @@ export const EventDetailsScreen: React.FC = () => {
         <>
             <ScrollView
                 style={[styles.container, { backgroundColor: colors.background }]}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 50 }}
+                contentContainerStyle={{ paddingBottom: 24 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >

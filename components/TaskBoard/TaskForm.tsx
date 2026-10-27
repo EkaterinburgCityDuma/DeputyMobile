@@ -164,7 +164,7 @@ export function TaskForm() {
                 </Text>
             </LinearGradient>
             <ScrollView
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >

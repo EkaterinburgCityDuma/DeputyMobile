@@ -514,12 +514,12 @@ export function TaskDetail() {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background, paddingBottom: insets.bottom + 30 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <StatusBar barStyle="light-content" />
 
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+                contentContainerStyle={{ paddingBottom: 24 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >

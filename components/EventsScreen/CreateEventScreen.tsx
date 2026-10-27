@@ -354,7 +354,7 @@ export function CreateEventScreen() {
             </LinearGradient>
             <ScrollView
                 ref={scrollViewRef}
-                contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 45 }]}
+                contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
