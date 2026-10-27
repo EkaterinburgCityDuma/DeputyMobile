@@ -36,6 +36,18 @@ RUN echo 'server { \
     listen 8081; \
     root /usr/share/nginx/html; \
     \
+    location = /pwa/service-worker.js { \
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always; \
+    } \
+    \
+    location = /pwa/manifest.json { \
+        add_header Cache-Control "no-cache" always; \
+    } \
+    \
+    location = /pwa/index.html { \
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always; \
+    } \
+    \
     # Правильная обработка манифеста и иконок \
     location ~* \.(json|png|ico|js)$ { \
         root /usr/share/nginx/html; \
@@ -47,6 +59,7 @@ RUN echo 'server { \
         alias /usr/share/nginx/html/pwa/; \
         index index.html; \
         try_files $uri $uri/ /pwa/index.html; \
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always; \
     } \
     \
     location = / { \

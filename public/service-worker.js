@@ -32,7 +32,7 @@ if (firebaseConfig) {
     });
 }
 
-const CACHE_NAME = 'my-pwa-cache-v2';
+const CACHE_NAME = 'my-pwa-cache-v3';
 const urlsToCache = [
     '/pwa/',
     '/pwa/index.html',
@@ -43,7 +43,8 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(urlsToCache).then(() => self.skipWaiting());
+            return cache.addAll(urlsToCache.map((url) => new Request(url, { cache: 'reload' })))
+                .then(() => self.skipWaiting());
         })
     );
 });
@@ -52,6 +53,28 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     if (event.request.method !== 'GET' || url.origin !== self.location.origin ||
         !url.pathname.startsWith('/pwa/') || event.request.headers.has('Authorization')) return;
+    // HTML must pick up the latest bundle and its Firebase config after deployment.
+    // Keep the cached page only as an offline fallback.
+    const isNavigation = event.request.mode === 'navigate';
+    if (isNavigation || url.pathname === '/pwa/manifest.json') {
+        event.respondWith((async () => {
+            const cache = await caches.open(CACHE_NAME);
+            try {
+                const response = await fetch(event.request, { cache: 'no-store' });
+                if (response.ok) {
+                    event.waitUntil(cache.put(event.request, response.clone()).catch(() => {}));
+                    return response;
+                }
+                return (await cache.match(event.request)) || response;
+            } catch (error) {
+                const cached = (await cache.match(event.request)) ||
+                    (isNavigation && await cache.match('/pwa/index.html'));
+                if (cached) return cached;
+                throw error;
+            }
+        })());
+        return;
+    }
     event.respondWith(
         caches.match(event.request)
             .then((response) => {

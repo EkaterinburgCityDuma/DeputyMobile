@@ -17,7 +17,7 @@ export function registerServiceWorker() {
     if (!workerPromise) {
         const query = new URLSearchParams();
         if (Object.values(firebaseConfig).every(Boolean)) query.set('firebase', JSON.stringify(firebaseConfig));
-        workerPromise = navigator.serviceWorker.register(`/pwa/service-worker.js?${query}`, { scope: '/pwa/' })
+        workerPromise = navigator.serviceWorker.register(`/pwa/service-worker.js?${query}`, { scope: '/pwa/', updateViaCache: 'none' })
             .then(async (registration) => {
                 if (!registration.active) {
                     const worker = registration.installing || registration.waiting;
