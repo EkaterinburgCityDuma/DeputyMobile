@@ -1,4 +1,4 @@
-import {Platform} from 'react-native';
+import {PermissionsAndroid, Platform} from 'react-native';
 import {apiClient} from "@/api/api";
 import {
     AuthorizationStatus,
@@ -28,6 +28,11 @@ export const registerDeviceToken = async (fcmToken: string) => {
 }
 
 export async function requestUserPermission() {
+    if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+        const permission = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
+        if (await PermissionsAndroid.check(permission)) return true;
+        return await PermissionsAndroid.request(permission) === PermissionsAndroid.RESULTS.GRANTED;
+    }
     const authStatus = await requestPermission(messagingInstance);
     const enabled =
         authStatus === AuthorizationStatus.AUTHORIZED ||

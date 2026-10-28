@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {SafeAreaProvider} from "react-native-safe-area-context";
 import {AuthManager} from "@/api/auth";
 import {useRouter, usePathname} from 'expo-router';
 import {requestUserPermission, registerDeviceToken, getFCMToken} from "@/api/fcmService"
@@ -44,19 +43,22 @@ const AppNative: React.FC = () => {
     useEffect(() => {
         if (!isAuthenticated) return;
 
+        let disposed = false;
         let unsubscribeOnMessage: (() => void) | undefined;
         let unsubscribeOnTokenRefresh: (() => void) | undefined;
 
         const setupNotifications = async () => {
             const hasPermission = await requestUserPermission();
-            if (!hasPermission) return;
+            if (!hasPermission || disposed) return;
 
             const fcmToken = await getFCMToken();
+            if (disposed) return;
             const authToken = AuthManager.getToken();
 
             if (fcmToken && authToken) {
                 await registerDeviceToken(fcmToken);
             }
+            if (disposed) return;
 
             unsubscribeOnMessage = onMessage(messagingInstance, async (remoteMessage) => {
                 try {
@@ -92,9 +94,10 @@ const AppNative: React.FC = () => {
             });
         };
 
-        setupNotifications();
+        setupNotifications().catch((error) => console.error('Notification setup failed:', error));
 
         return () => {
+            disposed = true;
             if (unsubscribeOnMessage) unsubscribeOnMessage();
             if (unsubscribeOnTokenRefresh) unsubscribeOnTokenRefresh();
         };
@@ -102,10 +105,7 @@ const AppNative: React.FC = () => {
 
     useProtectedRoute(isAuthenticated);
 
-    return (
-        <SafeAreaProvider>
-        </SafeAreaProvider>
-    );
+    return null;
 };
 
 export default AppNative;

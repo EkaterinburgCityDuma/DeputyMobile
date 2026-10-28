@@ -74,7 +74,22 @@ export class AuthManager {
     }
 
     static loadTokensFromStorage() {
-        return this.initialize();
+        if (!this.initPromise) return this.initialize();
+        return this.syncFromStorage();
+    }
+
+    static async syncFromStorage() {
+        await this.initialize();
+        if (Platform.OS !== 'web') return;
+        const version = this.sessionVersion;
+        const previousToken = this.token;
+        const previousUserId = this.userId;
+        await this.readStorage();
+        if (version === this.sessionVersion &&
+            (previousToken !== this.token || previousUserId !== this.userId)) {
+            ++this.sessionVersion;
+            this.notifyListeners();
+        }
     }
 
     static getToken() { return this.token; }

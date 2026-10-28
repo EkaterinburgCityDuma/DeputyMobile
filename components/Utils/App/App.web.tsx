@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {AuthManager} from "@/api/auth";
 import {useRouter, usePathname} from 'expo-router';
-import {View} from "react-native";
 import { syncDeviceToken } from '@/api/fcmService.web';
 
 function useProtectedRoute(isAuthenticated: boolean | null) {
@@ -27,16 +26,26 @@ const AppWeb: React.FC = () => {
             setIsAuthenticated(!!AuthManager.getToken());
             syncDeviceToken().catch(console.error);
         };
-        init();
+        init().catch(console.error);
 
-        return AuthManager.addListener((token) => {
+        const removeAuthListener = AuthManager.addListener((token) => {
             setIsAuthenticated(!!token);
         });
+        const onStorage = (event: StorageEvent) => {
+            if (!event.key || ['authToken', 'refreshToken', 'userId', 'userRole'].includes(event.key)) {
+                AuthManager.loadTokensFromStorage().catch(console.error);
+            }
+        };
+        window.addEventListener('storage', onStorage);
+        return () => {
+            removeAuthListener();
+            window.removeEventListener('storage', onStorage);
+        };
     }, []);
 
     useProtectedRoute(isAuthenticated);
 
-    return <View />;
+    return null;
 };
 
 export default AppWeb;

@@ -19,6 +19,7 @@
     "android": {
       "permissions": [
         "INTERNET",
+        "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ],

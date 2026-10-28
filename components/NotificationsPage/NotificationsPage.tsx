@@ -4,6 +4,7 @@ import {
     Text,
     TouchableOpacity,
     FlatList,
+    Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -23,6 +24,7 @@ import {useSafeAreaInsets} from "react-native-safe-area-context";
 import {NotificationSkeletonItem} from "@/components/NotificationsPage/NotificationSkeletonItem";
 import { Filters } from '../ui/Shared/Filters';
 import {apiClient} from "@/api/api";
+import { AuthManager } from '@/api/auth';
 import { useTheme } from '@/context/ThemeContext';
 
 const notificationConfig: Record<NotificationType, { icon: any; iconColor: string }> = {
@@ -50,7 +52,31 @@ export function Notifications() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [pushBusy, setPushBusy] = useState(false);
+    const [pushStatus, setPushStatus] = useState('');
     const insets = useSafeAreaInsets();
+
+    const enablePush = async () => {
+        setPushBusy(true);
+        setPushStatus('');
+        try {
+            if (typeof window === 'undefined' || !('Notification' in window)) throw new Error('Браузер не поддерживает уведомления');
+            // Request directly from the click handler so Safari preserves the user gesture.
+            const permission = window.Notification.permission === 'default'
+                ? await window.Notification.requestPermission()
+                : window.Notification.permission;
+            if (permission !== 'granted') throw new Error('Разрешите уведомления в настройках браузера');
+            const { syncDeviceToken } = await import('@/api/fcmService.web');
+            await AuthManager.loadTokensFromStorage();
+            if (!await syncDeviceToken()) throw new Error('Войдите в приложение и попробуйте ещё раз');
+            setPushStatus('Уведомления на устройстве подключены');
+        } catch (pushError) {
+            console.error('Push registration failed:', pushError);
+            setPushStatus(pushError instanceof Error ? pushError.message : 'Не удалось подключить уведомления');
+        } finally {
+            setPushBusy(false);
+        }
+    };
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -276,6 +302,16 @@ export function Notifications() {
                 />
             }
             />
+
+            {Platform.OS === 'web' && <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+                <TouchableOpacity onPress={enablePush} disabled={pushBusy} accessibilityRole="button"
+                    style={{ padding: 12, borderRadius: 8, backgroundColor: colors.primary }}>
+                    <Text style={{ color: 'white', textAlign: 'center' }}>
+                        {pushBusy ? 'Подключение…' : 'Включить уведомления на устройстве'}
+                    </Text>
+                </TouchableOpacity>
+                {!!pushStatus && <Text accessibilityLiveRegion="polite" style={{ color: colors.text, marginTop: 8 }}>{pushStatus}</Text>}
+            </View>}
 
             {/* Список уведомлений */}
                 <FlatList
