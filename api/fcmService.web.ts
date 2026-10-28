@@ -69,26 +69,29 @@ export async function registerDeviceToken(token: string) {
 // Token deletion and registration must finish in order, including a quick logout/login.
 let deviceOperation: Promise<void> = Promise.resolve();
 let deviceEpoch = 0;
-const pendingSyncs = new Map<string, Promise<void>>();
-function queueDeviceOperation(action: () => Promise<void>) {
+const pendingSyncs = new Map<string, Promise<boolean>>();
+function queueDeviceOperation<T>(action: () => Promise<T>) {
     const pending = deviceOperation.then(action);
-    deviceOperation = pending.catch(() => {});
+    deviceOperation = pending.then(() => {}, () => {});
     return pending;
 }
 
-export function syncDeviceToken(): Promise<void> {
+export function syncDeviceToken(): Promise<boolean> {
     const userId = AuthManager.getUserId();
     if (!userId || !AuthManager.getToken() || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
-        return Promise.resolve();
+        return Promise.resolve(false);
     }
     const existing = pendingSyncs.get(userId);
     if (existing) return existing;
     const epoch = deviceEpoch;
     const isCurrentSession = () => epoch === deviceEpoch && !!AuthManager.getToken() && AuthManager.getUserId() === userId;
     const pending = queueDeviceOperation(async () => {
-        if (!isCurrentSession()) return;
+        if (!isCurrentSession()) return false;
         const token = await getFCMToken();
-        if (token && isCurrentSession()) await registerDeviceToken(token);
+        if (!token) throw new Error('Не удалось получить токен уведомлений');
+        if (!isCurrentSession()) return false;
+        await registerDeviceToken(token);
+        return isCurrentSession();
     }).finally(() => {
         if (pendingSyncs.get(userId) === pending) pendingSyncs.delete(userId);
     });
@@ -103,7 +106,9 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
     let messagingReady = false;
     let unsubscribe: (() => void) | undefined;
     if ('serviceWorker' in navigator) registerServiceWorker().catch(console.error);
-    const sync = () => {
+    const sync = async () => {
+        if (disposed) return;
+        await AuthManager.loadTokensFromStorage();
         if (disposed) return;
         if (!AuthManager.getToken() || typeof Notification === 'undefined') {
             onPermissionPrompt?.(false);
@@ -115,8 +120,9 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
             permissionPromptShown = true;
             onPermissionPrompt(true);
         }
-        if (Notification.permission === 'granted') syncDeviceToken().catch(console.error);
+        if (Notification.permission === 'granted') await syncDeviceToken();
     };
+    const resync = () => { sync().catch(console.error); };
     const removeAuthListener = AuthManager.addListener((token) => {
         if (!token) {
             onPermissionPrompt?.(false);
@@ -125,7 +131,7 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
             pendingSyncs.clear();
             queueDeviceOperation(async () => { await deleteToken(await getWebMessaging()); }).catch(console.error);
         }
-        if (token) sync();
+        if (token) resync();
     });
     Promise.all([getWebMessaging(), AuthManager.loadTokensFromStorage()]).then(([messaging]) => {
         if (disposed) return;
@@ -143,18 +149,18 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
             } catch { /* Standard FCM notification. */ }
             Toast.show({ type: 'customNotification', text1: headerTitle, props: { title: mainText, time: subText } });
         });
-        sync();
+        resync();
     }).catch(console.warn);
-    const onVisible = () => { if (document.visibilityState === 'visible') sync(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') resync(); };
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', sync);
-    window.addEventListener('online', sync);
+    window.addEventListener('focus', resync);
+    window.addEventListener('online', resync);
     return () => {
         disposed = true;
         unsubscribe?.();
         removeAuthListener();
         document.removeEventListener('visibilitychange', onVisible);
-        window.removeEventListener('focus', sync);
-        window.removeEventListener('online', sync);
+        window.removeEventListener('focus', resync);
+        window.removeEventListener('online', resync);
     };
 }

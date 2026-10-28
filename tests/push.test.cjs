@@ -101,3 +101,9 @@ test('returning to a visible PWA resynchronizes its device token', async () => {
     cleanup();
     assert.equal(h.documentEvents.has('visibilitychange'), false);
 });
+
+test('missing FCM token reports registration failure', async () => {
+    const h = harness({ getToken: async () => '' });
+    await assert.rejects(h.syncDeviceToken(), /Не удалось получить токен/);
+    assert.equal(h.registrations.length, 0);
+});

@@ -146,3 +146,40 @@ test('malformed refresh data does not replace valid stored credentials', async (
     assert.equal(h.AuthManager.getToken(), 'old-access');
     assert.equal(h.storage.get('refreshToken'), 'old-refresh');
 });
+
+test('a tab reloads another tab account change and notifies its listeners', async () => {
+    const storage = new Map();
+    const first = harness({ storage });
+    await login(first);
+    const second = harness({ storage });
+    await second.AuthManager.loadTokensFromStorage();
+    const changes = [];
+    second.AuthManager.addListener((token) => changes.push(token));
+    await first.AuthManager.setAuth('other-access', 'other-refresh', 'user-2', []);
+    await second.AuthManager.loadTokensFromStorage();
+    assert.equal(second.AuthManager.getUserId(), 'user-2');
+    assert.equal(second.AuthManager.getToken(), 'other-access');
+    assert.deepEqual(changes, ['other-access']);
+    await first.AuthManager.clearAuth();
+    await second.AuthManager.loadTokensFromStorage();
+    assert.equal(second.AuthManager.getToken(), null);
+    assert.deepEqual(changes, ['other-access', null]);
+});
+
+test('a refresh cannot restore a session logged out in another tab', async () => {
+    const storage = new Map(), started = deferred(), finish = deferred();
+    const first = harness({ storage });
+    await login(first);
+    const second = harness({ storage, fetch: async () => {
+        started.resolve(); await finish.promise; return success();
+    } });
+    await second.AuthManager.loadTokensFromStorage();
+    const refresh = second.AuthManager.refreshAuthTokens();
+    await started.promise;
+    await first.AuthManager.clearAuth();
+    await second.AuthManager.loadTokensFromStorage();
+    finish.resolve();
+    await assert.rejects(refresh);
+    assert.equal(second.AuthManager.getToken(), null);
+    assert.equal(storage.has('authToken'), false);
+});

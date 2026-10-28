@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 import { Platform } from "react-native";
 import { NotificationPermissionPrompt } from '@/components/Utils/App/NotificationPermissionPrompt';
+import App from '@/components/Utils/App/App';
 
 const StackLayout = () => {
     const [permissionPromptVisible, setPermissionPromptVisible] = useState(false);
@@ -35,6 +36,7 @@ const StackLayout = () => {
     };
     return (
         <SafeAreaProvider>
+            <App />
             <ThemeProvider>
                 <Stack>
                     <Stack.Screen
