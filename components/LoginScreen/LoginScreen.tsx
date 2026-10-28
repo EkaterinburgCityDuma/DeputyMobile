@@ -14,7 +14,7 @@ import {
 import { styles } from './style';
 import {Profile} from "@/models/ProfileModel"
 import Toast from "react-native-toast-message";
-import axios from "axios";
+import { apiClient } from "@/api/api";
 
 import { AuthManager } from '@/api/auth';
 import { useTheme } from "@/context/ThemeContext";
@@ -80,8 +80,8 @@ const LoginScreen = () => {
 
         setIsLoading(true);
         try {
-            const response = await axios.post<AuthResponse>(
-                'https://ddc.egd.ru/api/Auth/login',
+            const response = await apiClient.post<AuthResponse>(
+                '/api/Auth/login',
                 {
                     email: email,
                     password: password

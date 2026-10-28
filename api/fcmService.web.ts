@@ -66,17 +66,34 @@ export async function registerDeviceToken(token: string) {
     return apiClient.post('/api/device/register', { token, platform: 'web' });
 }
 
-let syncPromise: Promise<void> | undefined;
-export function syncDeviceToken() {
-    if (!syncPromise) {
-        syncPromise = (async () => {
-            if (!AuthManager.getToken() || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-            const userId = AuthManager.getUserId();
-            const token = await getFCMToken();
-            if (token && AuthManager.getToken() && AuthManager.getUserId() === userId) await registerDeviceToken(token);
-        })().finally(() => { syncPromise = undefined; });
+// Token deletion and registration must finish in order, including a quick logout/login.
+let deviceOperation: Promise<void> = Promise.resolve();
+let deviceEpoch = 0;
+const pendingSyncs = new Map<string, Promise<void>>();
+function queueDeviceOperation(action: () => Promise<void>) {
+    const pending = deviceOperation.then(action);
+    deviceOperation = pending.catch(() => {});
+    return pending;
+}
+
+export function syncDeviceToken(): Promise<void> {
+    const userId = AuthManager.getUserId();
+    if (!userId || !AuthManager.getToken() || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        return Promise.resolve();
     }
-    return syncPromise;
+    const existing = pendingSyncs.get(userId);
+    if (existing) return existing;
+    const epoch = deviceEpoch;
+    const isCurrentSession = () => epoch === deviceEpoch && !!AuthManager.getToken() && AuthManager.getUserId() === userId;
+    const pending = queueDeviceOperation(async () => {
+        if (!isCurrentSession()) return;
+        const token = await getFCMToken();
+        if (token && isCurrentSession()) await registerDeviceToken(token);
+    }).finally(() => {
+        if (pendingSyncs.get(userId) === pending) pendingSyncs.delete(userId);
+    });
+    pendingSyncs.set(userId, pending);
+    return pending;
 }
 
 let permissionPromptShown = false;
@@ -104,7 +121,9 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
         if (!token) {
             onPermissionPrompt?.(false);
             // Invalidate the subscription even without a backend unregister endpoint.
-            getWebMessaging().then(deleteToken).catch(console.error);
+            deviceEpoch++;
+            pendingSyncs.clear();
+            queueDeviceOperation(async () => { await deleteToken(await getWebMessaging()); }).catch(console.error);
         }
         if (token) sync();
     });
@@ -126,12 +145,15 @@ export function setupWebNotifications(onPermissionPrompt?: (visible: boolean) =>
         });
         sync();
     }).catch(console.warn);
+    const onVisible = () => { if (document.visibilityState === 'visible') sync(); };
+    document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', sync);
     window.addEventListener('online', sync);
     return () => {
         disposed = true;
         unsubscribe?.();
         removeAuthListener();
+        document.removeEventListener('visibilitychange', onVisible);
         window.removeEventListener('focus', sync);
         window.removeEventListener('online', sync);
     };
